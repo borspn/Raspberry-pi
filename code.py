@@ -1,38 +1,22 @@
-#!/usr/bin/python
-import RPi.GPIO as GPIO
-import time
+# Getting the libraries we need
+from gpiozero import DistanceSensor
+from time import sleep
 
-try:
-      GPIO.setmode(GPIO.BOARD)
+# Initialize ultrasonic sensor
+sensor = DistanceSensor(trigger=18, echo=24)
 
-      PIN_TRIGGER = 7
-      PIN_ECHO = 11
+while True:
+	# Wait 2 seconds
+	sleep(2)
+	
+	# Get the distance in metres
+	distance = sensor.distance
 
-      GPIO.setup(PIN_TRIGGER, GPIO.OUT)
-      GPIO.setup(PIN_ECHO, GPIO.IN)
+	# But we want it in centimetres
+	distance = sensor.distance * 100
 
-      GPIO.output(PIN_TRIGGER, GPIO.LOW)
+	# We would get a large decimal number so we will round it to 2 places
+	distance = round(sensor.distance, 2)
 
-      print "Waiting for sensor to settle"
-
-      time.sleep(2)
-
-      print "Calculating distance"
-
-      GPIO.output(PIN_TRIGGER, GPIO.HIGH)
-
-      time.sleep(0.00001)
-
-      GPIO.output(PIN_TRIGGER, GPIO.LOW)
-
-      while GPIO.input(PIN_ECHO)==0:
-            pulse_start_time = time.time()
-      while GPIO.input(PIN_ECHO)==1:
-            pulse_end_time = time.time()
-
-      pulse_duration = pulse_end_time - pulse_start_time
-      distance = round(pulse_duration * 17150, 2)
-      print "Distance:",distance,"cm"
-
-finally:
-      GPIO.cleanup()
+	# Print the information to the screen
+	print("Distance: {} cm".format(sensor.distance))
