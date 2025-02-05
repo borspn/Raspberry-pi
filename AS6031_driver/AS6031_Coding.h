@@ -12,6 +12,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "AS6031_Bit_Definition.h"
 #include "AS6031_CFG_Macros.h"
+#include <stdint.h>
 
 /* Exported types ------------------------------------------------------------*/
 /** @defgroup AS6031_Exported_Types AS6031 Exported Types
