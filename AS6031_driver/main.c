@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "SPI_interface.h"
 
+#define TIME_ns(x)				(float)(x*1000000000.0)	// result in [ns]
+
 /* USER CODE BEGIN PV */
 AS6031_InitTypeDef DUT;        // DUT = Device Under Test
 volatile int N_Measure_Cycles; // counter for the while loop
@@ -58,6 +60,8 @@ uint8_t FWC[] = {
 		0xF3, 0x5C, 0x77, 0xF2, 0x9E, 0x7B, 0xCA, 0xF3, 0x1C, 0x8A, 0x7C, 0x64, 0x01, 0xF2, 0xDC, 0x0B,
 		0xCD
 };
+
+int FWC_Length = sizeof(FWC); 
 
 void setup()
 {
