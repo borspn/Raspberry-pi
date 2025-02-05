@@ -175,3 +175,30 @@ uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint
   
   return temp_u32;
 }
+
+/**
+  * @brief  Write two bytes.
+  * @param  byte1 (e.g. opcode RC_MT_REQ)
+  * @param  byte2 (e.g. request EC_MT_REQ_BITx)
+  * @retval none
+  */
+void Write_Opcode2(uint8_t byte1, uint8_t byte2)
+{
+  /* Timeout duration in millisecond [ms] */
+  uint8_t timeout = 10;
+  uint8_t spiTX[2];
+
+  spiTX[0] = byte1;
+  spiTX[1] = byte2;
+      
+  /* 1. Put SSN low - Activate */
+  Set_SSN(LOW);
+  
+  /* 2. Transmit register address */
+  spi_write(spiTX, 2);
+  
+  /* 3. Put SSN high - Deactivate */
+  Set_SSN(HIGH);
+
+  return;
+}

@@ -107,9 +107,9 @@ int main()
     Write_Dword(RC_RAA_WR, 0xC6, 0x00001000);
     Write_Opcode(RC_SV_INIT);
     Write_Opcode(RC_MCT_OFF);
-    HAL_Delay(1);
+    delay(1);
     Write_Opcode2(RC_MT_REQ, 0x00);
-    HAL_Delay(1);
+    delay(1);
     Write_Dword(RC_RAA_WR, 0xDD, 0x00000007);
     Write_Opcode(RC_RF_CLR);
     Write_Dword(RC_RAA_WR, 0xC4, 0x000AF000);
@@ -205,7 +205,7 @@ int main()
         // Clear INTN
         Write_Opcode(RC_IF_CLR);
 
-        HAL_Delay(50); // used for debugging
+        delay(50); // used for debugging
     }
     /* USER CODE END 3 */
     return 0;
