@@ -108,7 +108,7 @@ uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
     spiTX[1] = address;
 
     /* 1. Put SSN low - Activate */
-    Set_SSN(LOW);
+    PUT_SSN_LOW;
 
     /* 2. Transmit register address */
     spi_write(spiTX, 2);
@@ -117,7 +117,7 @@ uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
     spi_read(spiRX, 4);
 
     /* 4. Put SSN high - Deactivate */
-    Set_SSN(HIGH);
+    PUT_SSN_HIGH;
 
     /*Concatenate of bytes (from MSB to LSB) */
     temp_u32 = (spiRX[0] << 24) + (spiRX[1] << 16) + (spiRX[2] << 8) + (spiRX[3]);
@@ -180,13 +180,13 @@ void Write_Opcode2(uint8_t byte1, uint8_t byte2)
   spiTX[1] = byte2;
       
   /* 1. Put SSN low - Activate */
-  Set_SSN(LOW);
+  PUT_SSN_LOW;
   
   /* 2. Transmit register address */
   spi_write(spiTX, 2);
   
   /* 3. Put SSN high - Deactivate */
-  Set_SSN(HIGH);
+  PUT_SSN_HIGH;
 
   return;
 }
