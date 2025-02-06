@@ -81,13 +81,13 @@ void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte)
     spiTX[3] = byte;
 
     /* 1. Put SSN low - Activate */
-    Set_SSN(LOW);
+    PUT_SSN_LOW;
 
     /* 2. Transmit register address */
     spi_write(spiTX, 4);
 
     /* 3. Put SSN high - Deactivate */
-    Set_SSN(HIGH);
+    PUT_SSN_HIGH;
 
     return;
 }
