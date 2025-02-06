@@ -21,9 +21,6 @@ void spi_read(uint8_t *data, int length)
 
 void Write_Opcode(uint8_t one_byte)
 {
-    /* Timeout duration in millisecond [ms] */
-    uint8_t timeout = 10;
-
     /* 1. Put SSN low - Activate */
     PUT_SSN_LOW;
 
@@ -45,8 +42,6 @@ void Write_Opcode(uint8_t one_byte)
  */
 void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword)
 {
-    /* Timeout duration in millisecond [ms] */
-    uint8_t timeout = 10;
     uint8_t spiTX[6];
     uint32_t temp_u32 = 0;
 
@@ -78,8 +73,6 @@ void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword)
  */
 void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte)
 {
-    /* Timeout duration in millisecond [ms] */
-    uint8_t timeout = 10;
     uint8_t spiTX[4];
 
     spiTX[0] = opcode;
@@ -107,8 +100,6 @@ void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte)
  */
 uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
 {
-    /* Timeout duration in millisecond [ms] */
-    uint8_t timeout = 10;
     uint8_t spiTX[2];
     uint8_t spiRX[4];
     uint32_t temp_u32 = 0;
@@ -183,8 +174,6 @@ uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint
   */
 void Write_Opcode2(uint8_t byte1, uint8_t byte2)
 {
-  /* Timeout duration in millisecond [ms] */
-  uint8_t timeout = 10;
   uint8_t spiTX[2];
 
   spiTX[0] = byte1;
