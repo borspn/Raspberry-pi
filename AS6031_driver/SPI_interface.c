@@ -59,13 +59,12 @@ void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword)
     spiTX[5] = temp_u32;
 
     /* 1. Put SSN low - Activate */
-    Set_SSN(LOW);
-
+    PUT_SSN_LOW;
     /* 2. Transmit register address */
-    spi_write(spiTX, 6, timeout);
+    spi_write(spiTX, 6);
 
     /* 3. Put SSN high - Deactivate */
-    Set_SSN(HIGH);
+    PUT_SSN_HIGH;
 
     return;
 }
