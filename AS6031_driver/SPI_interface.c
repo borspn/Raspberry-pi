@@ -100,22 +100,16 @@ void spi_close() {
     system("echo 17 > /sys/class/gpio/unexport");
 }
 
-// void Write_Opcode(uint8_t one_byte)
-// {
-//   /* 1. Put SSN low - Activate */
-//   digitalWrite(SSN_PIN, 0);
-//   printf("SSN STATE = %d\n", READ_SSN_PIN);
-//   fflush(stdout);
+void Write_Opcode(uint8_t one_byte)
+{
+  /* 1. Put SSN low - Activate */
+  set_gpio(CS_GPIO, 0);
+  /* 2. Transmit register address */
+  spi_write(&one_byte, 1);
 
-//   /* 2. Transmit register address */
-//   spi_write(&one_byte, 1);
-
-//   /* 3. Put SSN high - Deactivate */
-//   digitalWrite(SSN_PIN, 1);
-//   printf("SSN STATE = %d\n", READ_SSN_PIN);
-//   fflush(stdout);
-//   return;
-// }
+  set_gpio(CS_GPIO, 1);
+  return;
+}
 
 // /**
 //  * @brief  Write one double word.

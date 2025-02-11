@@ -70,11 +70,11 @@ int FWC_Length = sizeof(FWC);
 int main()
 {
     spi_init();
-    // printf("main!\n");
-    // fflush(stdout);
+    printf("main!\n");
+     fflush(stdout);
 
-    // AS6031_Init_CFG(&DUT, Reg);
-    // Write_Opcode(RC_SYS_RST);
+    AS6031_Init_CFG(&DUT, Reg);
+    Write_Opcode(RC_SYS_RST);
 
     // DUT.State = AS6031_STATE_RESET;
 
