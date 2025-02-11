@@ -2209,11 +2209,11 @@ int digitalRead (int pin)
     }
 
     if (ISRP1MODEL) {
-      switch((unsigned int)gpio[2*pin] & RP1_STATUS_LEVEL_MASK) {
-        default: // 11 or 00 not allowed, give LOW!
-        case RP1_STATUS_LEVEL_LOW:  return LOW ;
-        case RP1_STATUS_LEVEL_HIGH: return HIGH ;
-      }
+      //switch((unsigned int)gpio[2*pin] & RP1_STATUS_LEVEL_MASK) {
+      //  default: // 11 or 00 not allowed, give LOW!
+      //  case RP1_STATUS_LEVEL_LOW:  return LOW ;
+      //  case RP1_STATUS_LEVEL_HIGH: return HIGH ;
+      //}
     } else {
       if ((*(gpio + gpioToGPLEV [pin]) & (1 << (pin & 31))) != 0)
         return HIGH ;
