@@ -118,7 +118,7 @@ int main()
     Write_Opcode(RC_MCT_ON);
     DUT.State = AS6031_STATE_RESET;
 
-    delay(3);
+    sleep(3);
 
     // Phase 2: Preparation
     Write_Opcode(RC_BM_REQ);
@@ -128,9 +128,9 @@ int main()
     Write_Dword(RC_RAA_WR, 0xC6, 0x00001000);
     Write_Opcode(RC_SV_INIT);
     Write_Opcode(RC_MCT_OFF);
-    delay(1);
+    sleep(1);
     Write_Opcode2(RC_MT_REQ, 0x00);
-    delay(1);
+    sleep(1);
     Write_Dword(RC_RAA_WR, 0xDD, 0x00000007);
     Write_Opcode(RC_RF_CLR);
     Write_Dword(RC_RAA_WR, 0xC4, 0x000AF000);
@@ -199,7 +199,7 @@ int main()
     // printf("while 5!\n");
     // fflush(stdout);
     // Write_Dword(RC_RAA_WR, 0xD3, 0x0007F000);
-    // delay(3); // After initialization checksum error flags, delay of at least 34ms are needed _MH
+    // sleep(3); // After initialization checksum error flags, sleep of at least 34ms are needed _MH
     // Write_Opcode(RC_FW_CHKSUM);
     // printf("while 6 !\n");
     // fflush(stdout);
@@ -240,7 +240,7 @@ int main()
     //     // Clear INTN
     //     Write_Opcode(RC_IF_CLR);
 
-    //     delay(50); // used for debugging
+    //     sleep(50); // used for debugging
     // }
     // /* USER CODE END 3 */
     // return 0;
