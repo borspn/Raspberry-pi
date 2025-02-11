@@ -153,6 +153,8 @@ uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint
   
   /* read the register content */
   address_content = Read_Dword(rd_opcode, address);
+  printf("address_content ==%d!\n", address_content);   
+  fflush(stdout);
   temp_u32 = (address_content & bit_mask) >> lsbit;
   
 #ifdef _DEBUGGGING_FUNCTION
