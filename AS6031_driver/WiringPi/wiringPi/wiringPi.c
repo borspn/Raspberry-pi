@@ -2284,6 +2284,8 @@ void digitalWriteDevice (int pin, int value) {
 
 void digitalWrite (int pin, int value)
 {
+  printf("wiringPiMode:%d\n", wiringPiMode);
+    fflush(stdout);
   struct wiringPiNodeStruct *node = wiringPiNodes ;
 
   if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
