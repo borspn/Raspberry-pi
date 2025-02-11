@@ -64,7 +64,7 @@ void spi_init() {
 }
 
 // Function to send SPI data
-void spi_send(uint8_t *data, int length) {
+void spi_write(uint8_t *data, int length) {
     set_gpio(CS_GPIO, 0); // Pull CS LOW
     struct spi_ioc_transfer transfer = {
         .tx_buf = (unsigned long)data,
