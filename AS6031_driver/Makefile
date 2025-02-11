@@ -1,8 +1,8 @@
 CC=gcc
 CFLAGS=-Wall -I.
-LDFLAGS=-L/usr/local/lib -lwiringPi
+LDFLAGS=-L/usr/local/lib
 
-SRCS=main.c SPI_interface.c WiringPi/wiringPi/wiringPi.c
+SRCS=main.c SPI_interface.c
 OBJS=$(SRCS:.c=.o)
 TARGET=as6031_driver
 
