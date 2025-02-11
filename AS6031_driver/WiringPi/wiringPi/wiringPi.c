@@ -446,7 +446,7 @@ static int RaspberryPiLayout = -1;
 
 // Debugging & Return codes
 
-int wiringPiDebug       = FALSE ;
+int wiringPiDebug       = TRUE ;
 int wiringPiReturnCodes = FALSE ;
 
 // Use /dev/gpiomem ?
