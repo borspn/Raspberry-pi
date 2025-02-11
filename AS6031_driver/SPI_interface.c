@@ -48,8 +48,8 @@ void spi_init() {
     ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
 
     // Export GPIO for CS
-    system("echo 17 > /sys/class/gpio/export");
-    system("echo out > /sys/class/gpio/gpio17/direction");
+    system("echo 10 > /sys/class/gpio/export");
+    system("echo out > /sys/class/gpio/gpio10/direction");
 }
 
 // Function to write data over SPI
