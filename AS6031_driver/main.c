@@ -79,6 +79,8 @@ void setup()
     // Set SSN pin as output
     pinMode(GPIO_PIN_SSN, OUTPUT);
     digitalWrite(GPIO_PIN_SSN, HIGH); // Deselect the sensor
+    printf("SPI initialized succesfully\n");
+    fflush(stdout);
 
 }
 
