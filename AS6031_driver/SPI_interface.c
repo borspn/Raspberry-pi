@@ -8,7 +8,7 @@
 #include <string.h>
 
 #define SPI_DEVICE "/dev/spidev0.0"
-#define CS_GPIO_PIN 10 // Set this to the GPIO pin used for CS
+#define CS_GPIO_PIN 2 // Set this to the GPIO pin used for CS
 
 int spi_fd; // SPI file descriptor
 
@@ -48,8 +48,8 @@ void spi_init() {
     ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
 
     // Export GPIO for CS
-    system("echo 10 > /sys/class/gpio/export");
-    system("echo out > /sys/class/gpio/gpio10/direction");
+    system("echo 2 > /sys/class/gpio/export");
+    system("echo out > /sys/class/gpio/gpio2/direction");
 }
 
 // Function to write data over SPI
