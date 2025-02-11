@@ -80,7 +80,7 @@ void spi_send(uint8_t *data, int length) {
 
 // Function to read data over SPI
 void spi_read(uint8_t *data, int length) {
-    set_gpio(CS_GPIO_PIN, 0); // Pull CS LOW to start transaction
+    set_gpio(CS_GPIO, 0); // Pull CS LOW to start transaction
     struct spi_ioc_transfer transfer = {
         .tx_buf = 0,
         .rx_buf = (unsigned long)data,
@@ -90,7 +90,7 @@ void spi_read(uint8_t *data, int length) {
         .delay_usecs = 0
     };
     ioctl(spi_fd, SPI_IOC_MESSAGE(1), &transfer);
-    set_gpio(CS_GPIO_PIN, 1); // Pull CS HIGH to end transaction
+    set_gpio(CS_GPIO, 1); // Pull CS HIGH to end transaction
 }
 
 // Function to close SPI
