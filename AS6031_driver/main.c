@@ -2,6 +2,8 @@
 #include <wiringPiSPI.h>
 #include "AS6031_Coding.h"
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "SPI_interface.h"
 
 #define TIME_ns(x)				(float)(x*1000000000.0)	// result in [ns]
@@ -80,6 +82,8 @@ void setup()
 
 int main()
 {
+    printf("main!\n");   
+    fflush(stdout);                         
     setup();
 
     AS6031_Init_CFG(&DUT, Reg);
@@ -120,7 +124,8 @@ int main()
     // Phase 2: Preparation (common for all procedures)
     // Phase 3: FW Update (different for procedures [A], [B], [C], [D] )
     // Phase 4: FW Retention Check (common for all procedures)
-
+    printf("phase1!\n");   
+    fflush(stdout);
     // Phase1: Initial Wait Time
     Write_Opcode(RC_MCT_ON);
     DUT.State = AS6031_STATE_RESET;
@@ -143,13 +148,20 @@ int main()
     Write_Opcode(RC_BM_RLS);
     Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
     Write_Dword(RC_RAA_WR, 0xDE, 0x00100000);
+    printf("while 1!\n");   
+    fflush(stdout);
     while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
     {
     };
     Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
+    printf("while 2!\n");   
+    fflush(stdout);
     while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
     {
     };
+
+    printf("phase 3!\n");   
+    fflush(stdout);
 
     // Phase 3: FW Update
     Read_Dword(RC_RAA_RD, 0xEC);
@@ -160,6 +172,7 @@ int main()
         Write_Byte2(RC_FWC_WR, i, FWC[i]); // Writing FWC, bytewise with two byte address
     }
 
+    
     // Write FWD
     Write_Dword(RC_RAA_WR_NVRAM, 0x00, 0x0000AB6A); // Writing Firmware Code User, Checksum
     Write_Dword(RC_RAA_WR_NVRAM, 0x01, 0x00000556); // Writing Firmware Data User, Checksum
@@ -177,7 +190,8 @@ int main()
 
     Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
     Write_Dword(RC_RAA_WR, 0xDE, 0x00010000);
-
+    printf("while 3!\n");   
+    fflush(stdout);
     while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
     {
     };
@@ -188,13 +202,19 @@ int main()
     while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
     {
     };
+    printf("while 4!\n");   
+    fflush(stdout);
     Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
     while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
     {
     };
+    printf("while 5!\n");   
+    fflush(stdout);
     Write_Dword(RC_RAA_WR, 0xD3, 0x0007F000);
     delay(3); // After initialization checksum error flags, delay of at least 34ms are needed _MH
     Write_Opcode(RC_FW_CHKSUM);
+    printf("while 6 !\n");   
+    fflush(stdout);
     while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 3, 3) == 0)
     {
     };
