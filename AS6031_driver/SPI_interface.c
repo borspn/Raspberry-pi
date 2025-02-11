@@ -60,6 +60,7 @@ void spi_init() {
 
     init_gpio(CS_GPIO); // Set up CS pin
     set_gpio(CS_GPIO, 1); // Default HIGH (inactive)
+    printf("SPI initialized!\n");
 }
 
 // Function to send SPI data
