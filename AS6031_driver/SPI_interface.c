@@ -13,109 +13,117 @@
 int spi_fd; // SPI file descriptor
 
 // Function to read GPIO value from sysfs
-int read_gpio(int pin) {
-    char path[50];
-    sprintf(path, "/sys/class/gpio/gpio%d/value", pin);
-    int fd = open(path, O_RDONLY);
-    if (fd < 0) {
-        perror("Failed to read GPIO");
-        return -1;
-    }
+int read_gpio(int pin)
+{
+  char path[50];
+  sprintf(path, "/sys/class/gpio/gpio%d/value", pin);
+  int fd = open(path, O_RDONLY);
+  if (fd < 0)
+  {
+    perror("Failed to read GPIO");
+    return -1;
+  }
 
-    char value;
-    read(fd, &value, 1);
-    close(fd);
+  char value;
+  read(fd, &value, 1);
+  close(fd);
 
-    return (value == '1') ? 1 : 0; // Convert char to int
+  return (value == '1') ? 1 : 0; // Convert char to int
 }
 
-
-void set_gpio(int pin, int value) {
-    char path[50];
-    sprintf(path, "/sys/class/gpio/gpio%d/value", pin);
-    int fd = open(path, O_WRONLY);
-    if (fd < 0) {
-        perror("Failed to set GPIO");
-        return;
-    }
-    write(fd, value ? "1" : "0", 1);
-    close(fd);
+void set_gpio(int pin, int value)
+{
+  char path[50];
+  sprintf(path, "/sys/class/gpio/gpio%d/value", pin);
+  int fd = open(path, O_WRONLY);
+  if (fd < 0)
+  {
+    perror("Failed to set GPIO");
+    return;
+  }
+  write(fd, value ? "1" : "0", 1);
+  close(fd);
 }
 
 // Function to export and set up GPIO for CS
-void init_gpio(int pin) {
-    char path[50];
-    sprintf(path, "/sys/class/gpio/export");
-    int fd = open(path, O_WRONLY);
-    if (fd >= 0) {
-        char buf[3];
-        sprintf(buf, "%d", pin);
-        write(fd, buf, strlen(buf));
-        close(fd);
-    }
-    
-    sprintf(path, "/sys/class/gpio/gpio%d/direction", pin);
-    fd = open(path, O_WRONLY);
-    if (fd >= 0) {
-        write(fd, "out", 3);
-        close(fd);
-    }
+void init_gpio(int pin)
+{
+  char path[50];
+  sprintf(path, "/sys/class/gpio/export");
+  int fd = open(path, O_WRONLY);
+  if (fd >= 0)
+  {
+    char buf[3];
+    sprintf(buf, "%d", pin);
+    write(fd, buf, strlen(buf));
+    close(fd);
+  }
+
+  sprintf(path, "/sys/class/gpio/gpio%d/direction", pin);
+  fd = open(path, O_WRONLY);
+  if (fd >= 0)
+  {
+    write(fd, "out", 3);
+    close(fd);
+  }
 }
 
 // Function to initialize SPI
-void spi_init() {
-    spi_fd = open(SPI_DEVICE, O_RDWR);
-    if (spi_fd < 0) {
-        perror("Failed to open SPI device");
-        exit(1);
-    }
+void spi_init()
+{
+  spi_fd = open(SPI_DEVICE, O_RDWR);
+  if (spi_fd < 0)
+  {
+    perror("Failed to open SPI device");
+    exit(1);
+  }
 
-    uint8_t mode = SPI_MODE_0 | SPI_NO_CS; // Use manual CS
-    ioctl(spi_fd, SPI_IOC_WR_MODE, &mode);
+  uint8_t mode = SPI_MODE_0 | SPI_NO_CS; // Use manual CS
+  ioctl(spi_fd, SPI_IOC_WR_MODE, &mode);
 
-    uint32_t speed = 500000; // 500 kHz
-    ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
+  uint32_t speed = 500000; // 500 kHz
+  ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
 
-    init_gpio(CS_GPIO); // Set up CS pin
-    set_gpio(CS_GPIO, 1); // Default HIGH (inactive)
-    printf("SPI initialized!\n");
+  init_gpio(CS_GPIO);   // Set up CS pin
+  set_gpio(CS_GPIO, 1); // Default HIGH (inactive)
+  printf("SPI initialized!\n");
 }
 
 // Function to send SPI data
-void spi_write(uint8_t *data, int length) {
-    set_gpio(CS_GPIO, 0); // Pull CS LOW
-    struct spi_ioc_transfer transfer = {
-        .tx_buf = (unsigned long)data,
-        .rx_buf = 0,
-        .len = length,
-        .speed_hz = 500000,
-        .bits_per_word = 8,
-        .delay_usecs = 0
-    };
-    ioctl(spi_fd, SPI_IOC_MESSAGE(1), &transfer);
-    set_gpio(CS_GPIO, 1); // Pull CS HIGH
+void spi_write(uint8_t *data, int length)
+{
+  set_gpio(CS_GPIO, 0); // Pull CS LOW
+  struct spi_ioc_transfer transfer = {
+      .tx_buf = (unsigned long)data,
+      .rx_buf = 0,
+      .len = length,
+      .speed_hz = 500000,
+      .bits_per_word = 8,
+      .delay_usecs = 0};
+  ioctl(spi_fd, SPI_IOC_MESSAGE(1), &transfer);
+  set_gpio(CS_GPIO, 1); // Pull CS HIGH
 }
 
-
 // Function to read data over SPI
-void spi_read(uint8_t *data, int length) {
-    set_gpio(CS_GPIO, 0); // Pull CS LOW to start transaction
-    struct spi_ioc_transfer transfer = {
-        .tx_buf = 0,
-        .rx_buf = (unsigned long)data,
-        .len = length,
-        .speed_hz = 500000,
-        .bits_per_word = 8,
-        .delay_usecs = 0
-    };
-    ioctl(spi_fd, SPI_IOC_MESSAGE(1), &transfer);
-    set_gpio(CS_GPIO, 1); // Pull CS HIGH to end transaction
+void spi_read(uint8_t *data, int length)
+{
+  set_gpio(CS_GPIO, 0); // Pull CS LOW to start transaction
+  struct spi_ioc_transfer transfer = {
+      .tx_buf = 0,
+      .rx_buf = (unsigned long)data,
+      .len = length,
+      .speed_hz = 500000,
+      .bits_per_word = 8,
+      .delay_usecs = 0};
+  ioctl(spi_fd, SPI_IOC_MESSAGE(1), &transfer);
+  set_gpio(CS_GPIO, 1); // Pull CS HIGH to end transaction
 }
 
 // Function to close SPI
-void spi_close() {
-    close(spi_fd);
-    system("echo 17 > /sys/class/gpio/unexport");
+void spi_close()
+{
+  close(spi_fd);
+  system("echo 17 > /sys/class/gpio/unexport");
 }
 
 void Write_Opcode(uint8_t one_byte)
@@ -127,7 +135,7 @@ void Write_Opcode(uint8_t one_byte)
   fflush(stdout);
   /* 2. Transmit register address */
   spi_write(&one_byte, 1);
-  
+
   set_gpio(CS_GPIO, 1);
   printf("CS_GPIO = %d !\n", read_gpio(CS_GPIO));
   fflush(stdout);
@@ -155,147 +163,127 @@ void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword)
   spiTX[5] = temp_u32;
 
   spi_write(spiTX, 6);
-  
+
   return;
 }
 
-// /**
-//  * @brief  Write one byte.
-//  * @param  opcode (byte)
-//  * @param  address (two bytes)
-//  * @param  byte (byte)
-//  * @retval none
-//  */
-// void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte)
-// {
-//   uint8_t spiTX[4];
+/**
+ * @brief  Write one byte.
+ * @param  opcode (byte)
+ * @param  address (two bytes)
+ * @param  byte (byte)
+ * @retval none
+ */
+void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte)
+{
+  uint8_t spiTX[4];
 
-//   spiTX[0] = opcode;
-//   spiTX[1] = address >> 8; // highest byte
-//   spiTX[2] = address;      // lowest byte
-//   spiTX[3] = byte;
+  spiTX[0] = opcode;
+  spiTX[1] = address >> 8; // highest byte
+  spiTX[2] = address;      // lowest byte
+  spiTX[3] = byte;
 
-//   /* 1. Put SSN low - Activate */
-//   PUT_SSN_LOW;
+  spi_write(spiTX, 4);
 
-//   /* 2. Transmit register address */
-//   spi_write(spiTX, 4);
+  return;
+}
 
-//   /* 3. Put SSN high - Deactivate */
-//   PUT_SSN_HIGH;
+/**
+ * @brief  Read double word.
+ * @param  opcode (byte)
+ * @param  address (byte)
+ * @retval 32-bit value
+ */
+uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
+{
+  uint8_t spiTX[2];
+  uint8_t spiRX[4];
+  uint32_t temp_u32 = 0;
 
-//   return;
-// }
+  spiTX[0] = rd_opcode;
+  spiTX[1] = address;
 
-// /**
-//  * @brief  Read double word.
-//  * @param  opcode (byte)
-//  * @param  address (byte)
-//  * @retval 32-bit value
-//  */
-// uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
-// {
-//   uint8_t spiTX[2];
-//   uint8_t spiRX[4];
-//   uint32_t temp_u32 = 0;
+  spi_write(spiTX, 2);
 
-//   spiTX[0] = rd_opcode;
-//   spiTX[1] = address;
+  spi_read(spiRX, 4);
 
-//   /* 1. Put SSN low - Activate */
-//   PUT_SSN_LOW;
+  for (int i = 0; i < 4; i++)
+  {
+    printf("spiRX ==%d, i = %d!\n", temp_u32, i);
+    fflush(stdout);
+  }
 
-//   /* 2. Transmit register address */
-//   spi_write(spiTX, 2);
+  /*Concatenate of bytes (from MSB to LSB) */
+  temp_u32 = (spiRX[0] << 24) + (spiRX[1] << 16) + (spiRX[2] << 8) + (spiRX[3]);
+  printf("temp_u32 ==%d!\n", temp_u32);
+  fflush(stdout);
+  return temp_u32;
+}
 
-//   /*3. Read four bytes */
-//   spi_read(spiRX, 4);
+uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint8_t lsbit)
+{
+  // #define _DEBUGGGING_FUNCTION
+  printf("Read_Dword_Bits!\n");
+  fflush(stdout);
+  uint32_t address_content = 0;
+  uint32_t bit_amount = 0;
+  uint32_t bit_mask = 0;
+  uint32_t temp_u32 = 0;
 
-//   /* 4. Put SSN high - Deactivate */
-//   PUT_SSN_HIGH;
-//   for (int i = 0; i < 4; i++)
-//   {
-//     printf("spiRX ==%d, i = %d!\n", temp_u32, i);
-//     fflush(stdout);
-//   }
+  /* out of range [31:0] */
+  if (msbit > 31)
+    msbit = 31;
+  if (lsbit > 31)
+    lsbit = 31;
 
-//   /*Concatenate of bytes (from MSB to LSB) */
-//   temp_u32 = (spiRX[0] << 24) + (spiRX[1] << 16) + (spiRX[2] << 8) + (spiRX[3]);
-//   printf("temp_u32 ==%d!\n", temp_u32);
-//   fflush(stdout);
-//   return temp_u32;
-// }
+  if (lsbit > msbit)
+    lsbit = msbit;
 
-// uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint8_t lsbit)
-// {
-//   // #define _DEBUGGGING_FUNCTION
-//   printf("Read_Dword_Bits!\n");
-//   fflush(stdout);
-//   uint32_t address_content = 0;
-//   uint32_t bit_amount = 0;
-//   uint32_t bit_mask = 0;
-//   uint32_t temp_u32 = 0;
+  /* build the mask */
+  bit_amount = msbit - lsbit;
+  for (int i = 0; i < bit_amount + 1; i++)
+  {
+    bit_mask <<= 1;
+    bit_mask += 1;
+  }
+  bit_mask <<= lsbit;
 
-//   /* out of range [31:0] */
-//   if (msbit > 31)
-//     msbit = 31;
-//   if (lsbit > 31)
-//     lsbit = 31;
+  /* read the register content */
+  address_content = Read_Dword(rd_opcode, address);
+  printf("address_content ==%d!\n", address_content);
+  fflush(stdout);
+  temp_u32 = (address_content & bit_mask) >> lsbit;
 
-//   if (lsbit > msbit)
-//     lsbit = msbit;
+#ifdef _DEBUGGGING_FUNCTION
+  /* for debugging */
+  puts("Read_Dword_Bits");
+  printf(" RD opcode = 0x%02X\taddress = 0x%02X\n", rd_opcode, address);
+  printf(" msb = %u\tlsb = %u\n", msbit, lsbit);
+  printf(" read content (before) = 0x%08X\tread content (after) = 0x%08X\n", address_content, temp_u32);
+  printf(" RD bit_mask = 0x%08X\n", bit_mask);
+#endif
 
-//   /* build the mask */
-//   bit_amount = msbit - lsbit;
-//   for (int i = 0; i < bit_amount + 1; i++)
-//   {
-//     bit_mask <<= 1;
-//     bit_mask += 1;
-//   }
-//   bit_mask <<= lsbit;
+#undef _DEBUGGGING_FUNCTION
+  printf("temp_u32 ==%d!\n", temp_u32);
+  fflush(stdout);
+  return temp_u32;
+}
 
-//   /* read the register content */
-//   address_content = Read_Dword(rd_opcode, address);
-//   printf("address_content ==%d!\n", address_content);
-//   fflush(stdout);
-//   temp_u32 = (address_content & bit_mask) >> lsbit;
+/**
+ * @brief  Write two bytes.
+ * @param  byte1 (e.g. opcode RC_MT_REQ)
+ * @param  byte2 (e.g. request EC_MT_REQ_BITx)
+ * @retval none
+ */
+void Write_Opcode2(uint8_t byte1, uint8_t byte2)
+{
+  uint8_t spiTX[2];
 
-// #ifdef _DEBUGGGING_FUNCTION
-//   /* for debugging */
-//   puts("Read_Dword_Bits");
-//   printf(" RD opcode = 0x%02X\taddress = 0x%02X\n", rd_opcode, address);
-//   printf(" msb = %u\tlsb = %u\n", msbit, lsbit);
-//   printf(" read content (before) = 0x%08X\tread content (after) = 0x%08X\n", address_content, temp_u32);
-//   printf(" RD bit_mask = 0x%08X\n", bit_mask);
-// #endif
+  spiTX[0] = byte1;
+  spiTX[1] = byte2;
 
-// #undef _DEBUGGGING_FUNCTION
-//   printf("temp_u32 ==%d!\n", temp_u32);
-//   fflush(stdout);
-//   return temp_u32;
-// }
+  spi_write(spiTX, 2);
 
-// /**
-//  * @brief  Write two bytes.
-//  * @param  byte1 (e.g. opcode RC_MT_REQ)
-//  * @param  byte2 (e.g. request EC_MT_REQ_BITx)
-//  * @retval none
-//  */
-// void Write_Opcode2(uint8_t byte1, uint8_t byte2)
-// {
-//   uint8_t spiTX[2];
 
-//   spiTX[0] = byte1;
-//   spiTX[1] = byte2;
-
-//   /* 1. Put SSN low - Activate */
-//   PUT_SSN_LOW;
-
-//   /* 2. Transmit register address */
-//   spi_write(spiTX, 2);
-
-//   /* 3. Put SSN high - Deactivate */
-//   PUT_SSN_HIGH;
-
-//   return;
-// }
+  return;
+}
