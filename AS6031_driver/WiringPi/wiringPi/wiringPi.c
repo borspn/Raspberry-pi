@@ -2209,7 +2209,7 @@ int digitalRead (int pin)
     }
 
     if (ISRP1MODEL) {
-      switch(const unsigned int(gpio[2*pin] & RP1_STATUS_LEVEL_MASK)) {
+      switch(unsigned int(gpio[2*pin] & RP1_STATUS_LEVEL_MASK)) {
         default: // 11 or 00 not allowed, give LOW!
         case RP1_STATUS_LEVEL_LOW:  return LOW ;
         case RP1_STATUS_LEVEL_HIGH: return HIGH ;
@@ -3352,10 +3352,10 @@ int wiringPiSetupGpio (void)
 {
   (void)wiringPiSetup () ;
 
-  if (wiringPiDebug)
+  if (wiringPiDebug){
     printf ("wiringPi: wiringPiSetupGpio called\n") ;
     fflush (stdout) ;
-
+  }
   wiringPiMode = WPI_MODE_GPIO ;
 
   return 0 ;
