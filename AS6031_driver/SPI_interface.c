@@ -1,4 +1,6 @@
 #include "SPI_interface.h"
+#include <stdint.h>
+#include <stdio.h>
 /**
  * @brief  Write one byte Opcode.
  * @param  one_byte
@@ -128,7 +130,8 @@ uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
 uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint8_t lsbit)
 {
 //#define _DEBUGGGING_FUNCTION
-  
+  printf("Read_Dword_Bits!\n");   
+  fflush(stdout);
   uint32_t address_content = 0;
   uint32_t bit_amount = 0;
   uint32_t bit_mask = 0;
@@ -162,7 +165,8 @@ uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint
 #endif
   
 #undef _DEBUGGGING_FUNCTION
-  
+  printf("temp_u32 ==%d!\n", temp_u32);   
+  fflush(stdout);
   return temp_u32;
 }
 
