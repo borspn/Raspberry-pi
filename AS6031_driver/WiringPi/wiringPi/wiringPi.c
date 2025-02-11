@@ -2288,6 +2288,8 @@ void digitalWrite (int pin, int value)
 
   if ((pin & PI_GPIO_MASK) == 0)		// On-Board Pin
   {
+    printf("wiringPiMode:%d\n", wiringPiMode);
+    fflush(stdout);
     switch(wiringPiMode) {
       default: //WPI_MODE_GPIO_SYS
         fprintf(stderr, "digitalWrite: invalid mode\n");
