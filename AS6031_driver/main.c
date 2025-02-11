@@ -66,23 +66,6 @@ uint8_t FWC[] = {
 
 int FWC_Length = sizeof(FWC);
 
-void setup()
-{
-    // Initialize wiringPi and SPI
-    wiringPiSetupGpio();
-    if (wiringPiSPISetup(SPI_CHANNEL, SPI_SPEED) == -1)
-    {
-        printf("Could not initialize SPI\n");
-        fflush(stdout);
-        return;
-    }
-
-    // Set SSN pin as output
-    pinMode(GPIO_PIN_SSN, OUTPUT);
-    digitalWrite(GPIO_PIN_SSN, HIGH); // Deselect the sensor
-    printf("SPI initialized succesfully\n");
-    fflush(stdout);
-}
 #define SPI_DEVICE "/dev/spidev0.0"
 int main()
 {
