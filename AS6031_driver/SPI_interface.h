@@ -19,6 +19,9 @@
 #define READ_SSN_PIN digitalRead(SSN_PIN) 
 
 extern void Write_Opcode(uint8_t one_byte);
+void set_gpio(int pin, int value);
+void spi_init();
+void spi_close();
 void spi_read(uint8_t *data, int length);
 void spi_write(uint8_t* data, int length);
 void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte);
