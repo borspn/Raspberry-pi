@@ -24,7 +24,7 @@ void spi_read(uint8_t *data, int length)
 void Write_Opcode(uint8_t one_byte)
 {
   /* 1. Put SSN low - Activate */
-  PUT_SSN_LOW;
+  digitalWrite(SSN_PIN, 0);
   printf("SSN STATE = %d\n", READ_SSN_PIN);
   fflush(stdout);
 
@@ -32,7 +32,7 @@ void Write_Opcode(uint8_t one_byte)
   spi_write(&one_byte, 1);
 
   /* 3. Put SSN high - Deactivate */
-  PUT_SSN_HIGH;
+  digitalWrite(SSN_PIN, 1);
   printf("SSN STATE = %d\n", READ_SSN_PIN);
   fflush(stdout);
   return;
