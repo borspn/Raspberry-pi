@@ -3350,6 +3350,7 @@ int wiringPiSetupGpio (void)
 
   if (wiringPiDebug)
     printf ("wiringPi: wiringPiSetupGpio called\n") ;
+    fflush (stdout) ;
 
   wiringPiMode = WPI_MODE_GPIO ;
 

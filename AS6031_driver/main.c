@@ -71,7 +71,7 @@ void setup()
     wiringPiSetupGpio();
     if (wiringPiSPISetup(SPI_CHANNEL, SPI_SPEED) == -1)
     {
-        // Handle error
+        printf("Could not initialize SPI\n");
         return;
     }
 
