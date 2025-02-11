@@ -120,7 +120,12 @@ uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
 
     /* 4. Put SSN high - Deactivate */
     PUT_SSN_HIGH;
-
+    for (int i = 0; i < 4; i++)
+    {
+      printf("spiRX ==%d, i = %d!\n", temp_u32, i);
+    fflush(stdout);
+    }
+    
     /*Concatenate of bytes (from MSB to LSB) */
     temp_u32 = (spiRX[0] << 24) + (spiRX[1] << 16) + (spiRX[2] << 8) + (spiRX[3]);
     printf("temp_u32 ==%d!\n", temp_u32);
