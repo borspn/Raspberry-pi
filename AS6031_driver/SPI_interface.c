@@ -12,49 +12,59 @@
 
 int spi_fd; // SPI file descriptor
 
-// Function to set GPIO state using sysfs
 void set_gpio(int pin, int value) {
     char path[50];
     sprintf(path, "/sys/class/gpio/gpio%d/value", pin);
     int fd = open(path, O_WRONLY);
     if (fd < 0) {
-        perror("Failed to open GPIO file");
+        perror("Failed to set GPIO");
         return;
     }
-    if (value)
-        write(fd, "1", 1);
-    else
-        write(fd, "0", 1);
+    write(fd, value ? "1" : "0", 1);
     close(fd);
 }
 
+// Function to export and set up GPIO for CS
+void init_gpio(int pin) {
+    char path[50];
+    sprintf(path, "/sys/class/gpio/export");
+    int fd = open(path, O_WRONLY);
+    if (fd >= 0) {
+        char buf[3];
+        sprintf(buf, "%d", pin);
+        write(fd, buf, strlen(buf));
+        close(fd);
+    }
+    
+    sprintf(path, "/sys/class/gpio/gpio%d/direction", pin);
+    fd = open(path, O_WRONLY);
+    if (fd >= 0) {
+        write(fd, "out", 3);
+        close(fd);
+    }
+}
 
-
-// Function to initialize SPI and CS GPIO
+// Function to initialize SPI
 void spi_init() {
-    // Open SPI device
     spi_fd = open(SPI_DEVICE, O_RDWR);
     if (spi_fd < 0) {
         perror("Failed to open SPI device");
         exit(1);
     }
 
-    // Set SPI mode
-    uint8_t mode = SPI_MODE_0; 
+    uint8_t mode = SPI_MODE_0 | SPI_NO_CS; // Use manual CS
     ioctl(spi_fd, SPI_IOC_WR_MODE, &mode);
 
-    // Set SPI speed
     uint32_t speed = 500000; // 500 kHz
     ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
 
-    // Export GPIO for CS
-    system("echo 2 > /sys/class/gpio/export");
-    system("echo out > /sys/class/gpio/gpio2/direction");
+    init_gpio(CS_GPIO); // Set up CS pin
+    set_gpio(CS_GPIO, 1); // Default HIGH (inactive)
 }
 
-// Function to write data over SPI
-void spi_write(uint8_t *data, int length) {
-    set_gpio(CS_GPIO_PIN, 0); // Pull CS LOW to start transaction
+// Function to send SPI data
+void spi_send(uint8_t *data, int length) {
+    set_gpio(CS_GPIO, 0); // Pull CS LOW
     struct spi_ioc_transfer transfer = {
         .tx_buf = (unsigned long)data,
         .rx_buf = 0,
@@ -64,8 +74,9 @@ void spi_write(uint8_t *data, int length) {
         .delay_usecs = 0
     };
     ioctl(spi_fd, SPI_IOC_MESSAGE(1), &transfer);
-    set_gpio(CS_GPIO_PIN, 1); // Pull CS HIGH to end transaction
+    set_gpio(CS_GPIO, 1); // Pull CS HIGH
 }
+
 
 // Function to read data over SPI
 void spi_read(uint8_t *data, int length) {
