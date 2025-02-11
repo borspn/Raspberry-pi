@@ -81,30 +81,30 @@ int main()
 
     sleep(3); // Datasheet -> Delay = 1ms... BUT at least 3ms are needed _MH
 
-    // // Write Configuration (0xC0 - 0xCE, 0xD0 - 0xD2, 0xDA - 0xDB)
-    // int offset = 0;
-    // int i, j = 0;
+    // Write Configuration (0xC0 - 0xCE, 0xD0 - 0xD2, 0xDA - 0xDB)
+    int offset = 0;
+    int i, j = 0;
 
-    // for (i = 0; i <= 19; i++)
-    // {
-    //     if (i == 0)
-    //     {
-    //         offset = 0xC0;
-    //         j = 0;
-    //     }
-    //     if (i == 15)
-    //     {
-    //         offset = 0xD0;
-    //         j = 0;
-    //     }
-    //     if (i == 18)
-    //     {
-    //         offset = 0xDA;
-    //         j = 0;
-    //     }
-    //     Write_Dword(RC_RAA_WR, (offset + j), DUT.CR[i]);
-    //     j++;
-    // }
+    for (i = 0; i <= 19; i++)
+    {
+        if (i == 0)
+        {
+            offset = 0xC0;
+            j = 0;
+        }
+        if (i == 15)
+        {
+            offset = 0xD0;
+            j = 0;
+        }
+        if (i == 18)
+        {
+            offset = 0xDA;
+            j = 0;
+        }
+        Write_Dword(RC_RAA_WR, (offset + j), DUT.CR[i]);
+        j++;
+    }
 
     // // FW Handling Procedures
     // // Datasheet Appendix, section 15.7

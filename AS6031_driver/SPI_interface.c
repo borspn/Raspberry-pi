@@ -134,36 +134,30 @@ void Write_Opcode(uint8_t one_byte)
   return;
 }
 
-// /**
-//  * @brief  Write one double word.
-//  * @param  opcode (byte)
-//  * @param  address (byte)
-//  * @param  dword (double word)
-//  * @retval none
-//  */
-// void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword)
-// {
-//   uint8_t spiTX[6];
-//   uint32_t temp_u32 = 0;
+/**
+ * @brief  Write one double word.
+ * @param  opcode (byte)
+ * @param  address (byte)
+ * @param  dword (double word)
+ * @retval none
+ */
+void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword)
+{
+  uint8_t spiTX[6];
+  uint32_t temp_u32 = 0;
 
-//   spiTX[0] = opcode;
-//   spiTX[1] = address;
-//   temp_u32 = dword;
-//   spiTX[2] = temp_u32 >> 24;
-//   spiTX[3] = temp_u32 >> 16;
-//   spiTX[4] = temp_u32 >> 8;
-//   spiTX[5] = temp_u32;
+  spiTX[0] = opcode;
+  spiTX[1] = address;
+  temp_u32 = dword;
+  spiTX[2] = temp_u32 >> 24;
+  spiTX[3] = temp_u32 >> 16;
+  spiTX[4] = temp_u32 >> 8;
+  spiTX[5] = temp_u32;
 
-//   /* 1. Put SSN low - Activate */
-//   PUT_SSN_LOW;
-//   /* 2. Transmit register address */
-//   spi_write(spiTX, 6);
-
-//   /* 3. Put SSN high - Deactivate */
-//   PUT_SSN_HIGH;
-
-//   return;
-// }
+  spi_write(spiTX, 6);
+  
+  return;
+}
 
 // /**
 //  * @brief  Write one byte.
