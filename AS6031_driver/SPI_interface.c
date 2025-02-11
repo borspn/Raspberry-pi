@@ -25,7 +25,7 @@ void Write_Opcode(uint8_t one_byte)
 {
   /* 1. Put SSN low - Activate */
   PUT_SSN_LOW;
-  printf("SSN STATE = %D\n", READ_SSN_PIN);
+  printf("SSN STATE = %d\n", READ_SSN_PIN);
   fflush(stdout);
 
   /* 2. Transmit register address */
@@ -33,7 +33,7 @@ void Write_Opcode(uint8_t one_byte)
 
   /* 3. Put SSN high - Deactivate */
   PUT_SSN_HIGH;
-  printf("SSN STATE = %D\n", READ_SSN_PIN);
+  printf("SSN STATE = %d\n", READ_SSN_PIN);
   fflush(stdout);
   return;
 }
