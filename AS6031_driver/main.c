@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "SPI_interface.h"
 
 #define TIME_ns(x) (float)(x * 1000000000.0) // result in [ns]
@@ -76,9 +77,9 @@ int main()
     AS6031_Init_CFG(&DUT, Reg);
     Write_Opcode(RC_SYS_RST);
 
-    // DUT.State = AS6031_STATE_RESET;
+    DUT.State = AS6031_STATE_RESET;
 
-    // delay(3); // Datasheet -> Delay = 1ms... BUT at least 3ms are needed _MH
+    sleep(3); // Datasheet -> Delay = 1ms... BUT at least 3ms are needed _MH
 
     // // Write Configuration (0xC0 - 0xCE, 0xD0 - 0xD2, 0xDA - 0xDB)
     // int offset = 0;
