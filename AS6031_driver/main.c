@@ -72,12 +72,14 @@ void setup()
     if (wiringPiSPISetup(SPI_CHANNEL, SPI_SPEED) == -1)
     {
         printf("Could not initialize SPI\n");
+        fflush(stdout);
         return;
     }
 
     // Set SSN pin as output
     pinMode(GPIO_PIN_SSN, OUTPUT);
     digitalWrite(GPIO_PIN_SSN, HIGH); // Deselect the sensor
+
 }
 
 int main()
