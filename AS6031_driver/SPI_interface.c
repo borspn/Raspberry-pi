@@ -78,7 +78,7 @@ void spi_init()
     exit(1);
   }
 
-  uint8_t mode = SPI_MODE_0 | SPI_NO_CS; // Use manual CS
+  uint8_t mode = SPI_MODE_0; // Use manual CS
   ioctl(spi_fd, SPI_IOC_WR_MODE, &mode);
 
   uint32_t speed = 500000; // 500 kHz
