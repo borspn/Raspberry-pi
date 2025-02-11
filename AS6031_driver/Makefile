@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -I.
-LIBS=-lwiringPi
+LDFLAGS=-L/usr/local/lib
 
 SRCS=main.c SPI_interface.c wiringPi.c
 OBJS=$(SRCS:.c=.o)
