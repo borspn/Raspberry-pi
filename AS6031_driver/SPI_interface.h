@@ -11,11 +11,12 @@
 #define GPIO_PIN_SCK 11
 #define GPIO_PIN_SSN 8
 
-#define SSN_PIN 8 // Define the SSN pin (BCM numbering)
+#define SSN_PIN 10 // Define the SSN pin (BCM numbering)
 #define HIGH 1
 #define LOW 0
 #define PUT_SSN_HIGH digitalWrite(SSN_PIN, HIGH) // Put SSN low - Activate, SSN -> CLK = < 4us
 #define PUT_SSN_LOW digitalWrite(SSN_PIN, LOW)   // Put SSN low - Activate, SSN -> CLK = < 4us
+#define READ_SSN_PIN digitalRead(SSN_PIN) 
 
 extern void Write_Opcode(uint8_t one_byte);
 void spi_read(uint8_t *data, int length);
