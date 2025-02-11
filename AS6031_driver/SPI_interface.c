@@ -8,7 +8,7 @@
 #include <string.h>
 
 #define SPI_DEVICE "/dev/spidev0.0"
-#define CS_GPIO 2 // Set this to the GPIO pin used for CS
+#define CS_GPIO 10 // Set this to the GPIO pin used for CS
 
 int spi_fd; // SPI file descriptor
 
