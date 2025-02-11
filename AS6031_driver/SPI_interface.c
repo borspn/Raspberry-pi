@@ -12,6 +12,24 @@
 
 int spi_fd; // SPI file descriptor
 
+// Function to read GPIO value from sysfs
+int read_gpio(int pin) {
+    char path[50];
+    sprintf(path, "/sys/class/gpio/gpio%d/value", pin);
+    int fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        perror("Failed to read GPIO");
+        return -1;
+    }
+
+    char value;
+    read(fd, &value, 1);
+    close(fd);
+
+    return (value == '1') ? 1 : 0; // Convert char to int
+}
+
+
 void set_gpio(int pin, int value) {
     char path[50];
     sprintf(path, "/sys/class/gpio/gpio%d/value", pin);
@@ -105,13 +123,13 @@ void Write_Opcode(uint8_t one_byte)
   /* 1. Put SSN low - Activate */
   set_gpio(CS_GPIO, 0);
 
-  printf("CS_GPIO = %d !\n", digitalRead(CS_GPIO));
+  printf("CS_GPIO = %d !\n", read_gpio(CS_GPIO));
   fflush(stdout);
   /* 2. Transmit register address */
   spi_write(&one_byte, 1);
   
   set_gpio(CS_GPIO, 1);
-  printf("CS_GPIO = %d!\n", digitalRead(CS_GPIO));
+  printf("CS_GPIO = %d !\n", read_gpio(CS_GPIO));
   fflush(stdout);
   return;
 }
