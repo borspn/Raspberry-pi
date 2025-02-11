@@ -136,125 +136,125 @@ int main()
     Write_Opcode(RC_BM_REQ);
     Write_Dword(RC_RAA_WR, 0xC0, 0x48DBA399);
         Read_Dword(RC_RAA_WR, 0xC0);
-    Write_Dword(RC_RAA_WR, 0xCD, 0x40100000);
-    Write_Dword(RC_RAA_WR, 0xC6, 0x00001000);
-    Write_Opcode(RC_SV_INIT);
-    Write_Opcode(RC_MCT_OFF);
-    delay(1);
-    Write_Opcode2(RC_MT_REQ, 0x00);
-    delay(1);
-    Write_Dword(RC_RAA_WR, 0xDD, 0x00000007);
-    Write_Opcode(RC_RF_CLR);
-    Write_Dword(RC_RAA_WR, 0xC4, 0x000AF000);
-    Write_Opcode(RC_BM_RLS);
-    Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
-    Write_Dword(RC_RAA_WR, 0xDE, 0x00100000);
-    printf("while 1!\n");   
-    fflush(stdout);
-    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    {
-    };
-    Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
-    printf("while 2!\n");   
-    fflush(stdout);
-    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    {
-    };
+    // Write_Dword(RC_RAA_WR, 0xCD, 0x40100000);
+    // Write_Dword(RC_RAA_WR, 0xC6, 0x00001000);
+    // Write_Opcode(RC_SV_INIT);
+    // Write_Opcode(RC_MCT_OFF);
+    // delay(1);
+    // Write_Opcode2(RC_MT_REQ, 0x00);
+    // delay(1);
+    // Write_Dword(RC_RAA_WR, 0xDD, 0x00000007);
+    // Write_Opcode(RC_RF_CLR);
+    // Write_Dword(RC_RAA_WR, 0xC4, 0x000AF000);
+    // Write_Opcode(RC_BM_RLS);
+    // Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
+    // Write_Dword(RC_RAA_WR, 0xDE, 0x00100000);
+    // printf("while 1!\n");   
+    // fflush(stdout);
+    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
+    // {
+    // };
+    // Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
+    // printf("while 2!\n");   
+    // fflush(stdout);
+    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
+    // {
+    // };
 
-    printf("phase 3!\n");   
-    fflush(stdout);
+    // printf("phase 3!\n");   
+    // fflush(stdout);
 
-    // Phase 3: FW Update
-    Read_Dword(RC_RAA_RD, 0xEC);
+    // // Phase 3: FW Update
+    // Read_Dword(RC_RAA_RD, 0xEC);
 
-    // Write FWC
-    for (i = 32; i <= FWC_Length; i++)
-    {
-        Write_Byte2(RC_FWC_WR, i, FWC[i]); // Writing FWC, bytewise with two byte address
-    }
+    // // Write FWC
+    // for (i = 32; i <= FWC_Length; i++)
+    // {
+    //     Write_Byte2(RC_FWC_WR, i, FWC[i]); // Writing FWC, bytewise with two byte address
+    // }
 
     
-    // Write FWD
-    Write_Dword(RC_RAA_WR_NVRAM, 0x00, 0x0000AB6A); // Writing Firmware Code User, Checksum
-    Write_Dword(RC_RAA_WR_NVRAM, 0x01, 0x00000556); // Writing Firmware Data User, Checksum
-    Write_Dword(RC_RAA_WR_NVRAM, 0x02, 0x00010000); // Writing FWD_SIMPLE_SCALE (fd16)
-    Write_Dword(RC_RAA_WR_NVRAM, 0x03, 0x00000000); // Writing FWD_ZERO_OFFSET
-    Write_Dword(RC_RAA_WR_NVRAM, 0x04, 0x051EB852); // Writing FWD_MAX_TOF_DIFF
-    Write_Dword(RC_RAA_WR_NVRAM, 0x05, 0xFAE147AE); // Writing FWD_NEG_TOF_DIFF_LIMIT
+    // // Write FWD
+    // Write_Dword(RC_RAA_WR_NVRAM, 0x00, 0x0000AB6A); // Writing Firmware Code User, Checksum
+    // Write_Dword(RC_RAA_WR_NVRAM, 0x01, 0x00000556); // Writing Firmware Data User, Checksum
+    // Write_Dword(RC_RAA_WR_NVRAM, 0x02, 0x00010000); // Writing FWD_SIMPLE_SCALE (fd16)
+    // Write_Dword(RC_RAA_WR_NVRAM, 0x03, 0x00000000); // Writing FWD_ZERO_OFFSET
+    // Write_Dword(RC_RAA_WR_NVRAM, 0x04, 0x051EB852); // Writing FWD_MAX_TOF_DIFF
+    // Write_Dword(RC_RAA_WR_NVRAM, 0x05, 0xFAE147AE); // Writing FWD_NEG_TOF_DIFF_LIMIT
 
-    Write_Dword(RC_RAA_WR_NVRAM, 0x5B, 0x0000000A); // Writing FWD_R_PULSE_PER_LITER
-    Write_Dword(RC_RAA_WR_NVRAM, 0x5C, 0x000003E8); // Writing FWD_R_PULSE_MAX_FLOW
+    // Write_Dword(RC_RAA_WR_NVRAM, 0x5B, 0x0000000A); // Writing FWD_R_PULSE_PER_LITER
+    // Write_Dword(RC_RAA_WR_NVRAM, 0x5C, 0x000003E8); // Writing FWD_R_PULSE_MAX_FLOW
 
-    Write_Dword(RC_RAA_WR_NVRAM, 0x67, 0x00000000); // Writing FWD_USM_RLS_DLY_INIT
+    // Write_Dword(RC_RAA_WR_NVRAM, 0x67, 0x00000000); // Writing FWD_USM_RLS_DLY_INIT
 
-    Write_Dword(RC_RAA_WR_NVRAM, 0x6B, 0xABCD7654); // Writing Boot-Loader Release Code
+    // Write_Dword(RC_RAA_WR_NVRAM, 0x6B, 0xABCD7654); // Writing Boot-Loader Release Code
 
-    Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
-    Write_Dword(RC_RAA_WR, 0xDE, 0x00010000);
-    printf("while 3!\n");   
-    fflush(stdout);
-    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    {
-    };
+    // Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
+    // Write_Dword(RC_RAA_WR, 0xDE, 0x00010000);
+    // printf("while 3!\n");   
+    // fflush(stdout);
+    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
+    // {
+    // };
 
-    // Phase 4: FW Retention Check
-    Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
-    Write_Dword(RC_RAA_WR, 0xDE, 0x00100000);
-    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    {
-    };
-    printf("while 4!\n");   
-    fflush(stdout);
-    Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
-    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    {
-    };
-    printf("while 5!\n");   
-    fflush(stdout);
-    Write_Dword(RC_RAA_WR, 0xD3, 0x0007F000);
-    delay(3); // After initialization checksum error flags, delay of at least 34ms are needed _MH
-    Write_Opcode(RC_FW_CHKSUM);
-    printf("while 6 !\n");   
-    fflush(stdout);
-    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 3, 3) == 0)
-    {
-    };
-    Read_Dword(RC_RAA_RD, 0xD3);
+    // // Phase 4: FW Retention Check
+    // Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
+    // Write_Dword(RC_RAA_WR, 0xDE, 0x00100000);
+    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
+    // {
+    // };
+    // printf("while 4!\n");   
+    // fflush(stdout);
+    // Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
+    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
+    // {
+    // };
+    // printf("while 5!\n");   
+    // fflush(stdout);
+    // Write_Dword(RC_RAA_WR, 0xD3, 0x0007F000);
+    // delay(3); // After initialization checksum error flags, delay of at least 34ms are needed _MH
+    // Write_Opcode(RC_FW_CHKSUM);
+    // printf("while 6 !\n");   
+    // fflush(stdout);
+    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 3, 3) == 0)
+    // {
+    // };
+    // Read_Dword(RC_RAA_RD, 0xD3);
 
-    // END
-    Write_Opcode(RC_SYS_RST);
+    // // END
+    // Write_Opcode(RC_SYS_RST);
 
-    while (1)
-    {
-        /* USER CODE END WHILE */
+    // while (1)
+    // {
+    //     /* USER CODE END WHILE */
 
-        /* USER CODE BEGIN 3 */
-        N_Measure_Cycles++;
+    //     /* USER CODE BEGIN 3 */
+    //     N_Measure_Cycles++;
 
-        // Wait for INTN
-        // NVIC Functionality to increase the speed of MCU
-        while ((My_INTN_State == 1))
-        {
-        }; // timeout is missing
+    //     // Wait for INTN
+    //     // NVIC Functionality to increase the speed of MCU
+    //     while ((My_INTN_State == 1))
+    //     {
+    //     }; // timeout is missing
 
-        // Post Processing
+    //     // Post Processing
 
-        // RAW_Result = Read_Dword(RC_RAA_RD, 0x80);  // FDB_US_TOF_SUM_OF_ALL_U
-        // RAW_Result = Read_Dword(RC_RAA_RD, 0x84);  // FDB_US_TOF_SUM_OF_ALL_D
-        // RAW_Result /= DUT.Param.CR10.TOF_HIT_SUM_NO;  // Divided by number of hits
+    //     // RAW_Result = Read_Dword(RC_RAA_RD, 0x80);  // FDB_US_TOF_SUM_OF_ALL_U
+    //     // RAW_Result = Read_Dword(RC_RAA_RD, 0x84);  // FDB_US_TOF_SUM_OF_ALL_D
+    //     // RAW_Result /= DUT.Param.CR10.TOF_HIT_SUM_NO;  // Divided by number of hits
 
-        RAW_Result = Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
+    //     RAW_Result = Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
 
-        RAW_Result /= 65536; // divided by 2^16
-        Time_Result = RAW_Result * 250 * (1e-9);
+    //     RAW_Result /= 65536; // divided by 2^16
+    //     Time_Result = RAW_Result * 250 * (1e-9);
 
-        Time_Result_ns = TIME_ns(Time_Result); // result in [ns]
+    //     Time_Result_ns = TIME_ns(Time_Result); // result in [ns]
 
-        // Clear INTN
-        Write_Opcode(RC_IF_CLR);
+    //     // Clear INTN
+    //     Write_Opcode(RC_IF_CLR);
 
-        delay(50); // used for debugging
-    }
-    /* USER CODE END 3 */
+    //     delay(50); // used for debugging
+    // }
+    // /* USER CODE END 3 */
     return 0;
 }
