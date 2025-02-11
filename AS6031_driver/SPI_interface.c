@@ -105,13 +105,13 @@ void Write_Opcode(uint8_t one_byte)
   /* 1. Put SSN low - Activate */
   set_gpio(CS_GPIO, 0);
 
-  printf("CS_GPIO = !\n", digitalRead(CS_GPIO));
+  printf("CS_GPIO = &d !\n", digitalRead(CS_GPIO));
   fflush(stdout);
   /* 2. Transmit register address */
   spi_write(&one_byte, 1);
   
   set_gpio(CS_GPIO, 1);
-  printf("CS_GPIO = !\n", digitalRead(CS_GPIO));
+  printf("CS_GPIO = %d!\n", digitalRead(CS_GPIO));
   fflush(stdout);
   return;
 }
