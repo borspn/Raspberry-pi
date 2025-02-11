@@ -135,6 +135,7 @@ int main()
     // Phase 2: Preparation
     Write_Opcode(RC_BM_REQ);
     Write_Dword(RC_RAA_WR, 0xC0, 0x48DBA399);
+        Read_Dword(RC_RAA_WR, 0xC0);
     Write_Dword(RC_RAA_WR, 0xCD, 0x40100000);
     Write_Dword(RC_RAA_WR, 0xC6, 0x00001000);
     Write_Opcode(RC_SV_INIT);

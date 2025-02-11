@@ -123,7 +123,8 @@ uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
 
     /*Concatenate of bytes (from MSB to LSB) */
     temp_u32 = (spiRX[0] << 24) + (spiRX[1] << 16) + (spiRX[2] << 8) + (spiRX[3]);
-
+    printf("temp_u32 ==%d!\n", temp_u32);
+    fflush(stdout);
     return temp_u32;
 }
 
