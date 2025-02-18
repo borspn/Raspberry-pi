@@ -18,6 +18,7 @@
 
 extern void Write_Opcode(uint8_t one_byte);
 void set_gpio(int pin, int value);
+void test();
 void spi_init();
 void spi_close();
 void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte);

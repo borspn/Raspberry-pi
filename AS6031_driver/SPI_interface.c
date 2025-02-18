@@ -42,6 +42,11 @@ void spi_close() {
     printf("SPI closed and GPIO released.\n");
 }
 
+
+void test(){
+  gpioWrite(CS_GPIO, 0);
+
+}
 /**
  * @brief Set GPIO value (HIGH or LOW).
  */
@@ -53,7 +58,10 @@ void set_gpio(int pin, int value) {
  * @brief Read GPIO value (HIGH or LOW).
  */
 int read_gpio(int pin) {
-    return gpioRead(pin);
+  gpioWrite(CS_GPIO, 1)
+  sleep(3);
+  gpioWrite(CS_GPIO, 0)
+
 }
 
 /**
@@ -106,7 +114,7 @@ void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte) {
  */
 uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address) {
     uint8_t spiTX[2] = { rd_opcode, address };
-    uint8_t spiRX[4] = { 0 };
+    uint8_t spiRX[6] = { 0 };
 
     spiXfer(spi_handle, spiTX, spiRX, 6);  // Send opcode/address, receive data
 
