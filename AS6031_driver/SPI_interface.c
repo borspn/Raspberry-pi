@@ -44,8 +44,13 @@ void spi_close() {
 
 
 void test(){
+  gpioWrite(CS_GPIO, 1);
+  printf("1");
+  fflush(stdout);
+  sleep(3);
   gpioWrite(CS_GPIO, 0);
-
+  printf("0");
+  fflush(stdout);
 }
 /**
  * @brief Set GPIO value (HIGH or LOW).
@@ -58,14 +63,7 @@ void set_gpio(int pin, int value) {
  * @brief Read GPIO value (HIGH or LOW).
  */
 int read_gpio(int pin) {
-  gpioWrite(CS_GPIO, 1);
-  printf("1");
-  fflush(stdout);
-  sleep(3);
-  gpioWrite(CS_GPIO, 0);
-  printf("0");
-  fflush(stdout);
-
+    return gpioRead(pin);
 }
 
 /**
