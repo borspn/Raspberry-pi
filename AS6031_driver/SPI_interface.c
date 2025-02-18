@@ -5,7 +5,7 @@
 
 #define SPI_CHANNEL 0  // SPI device (spidev0.0)
 #define SPI_SPEED 500000 // 500 kHz
-#define CS_GPIO 10 // Chip Select GPIO pin
+#define CS_GPIO 6 // Chip Select GPIO pin
 
 int spi_handle;
 
