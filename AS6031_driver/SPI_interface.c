@@ -58,9 +58,9 @@ void set_gpio(int pin, int value) {
  * @brief Read GPIO value (HIGH or LOW).
  */
 int read_gpio(int pin) {
-  gpioWrite(CS_GPIO, 1)
+  gpioWrite(CS_GPIO, 1);
   sleep(3);
-  gpioWrite(CS_GPIO, 0)
+  gpioWrite(CS_GPIO, 0);
 
 }
 
