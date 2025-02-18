@@ -1,4 +1,4 @@
-# Makefile for compiling SPI_interface.c with pigpio library
+# Makefile for compiling SPI_interface.c and main.c with pigpio library
 
 # Compiler
 CC = gcc
@@ -16,7 +16,7 @@ LIBDIRS = -L/usr/local/lib
 LIBS = -lpigpio -lpthread
 
 # Source files
-SRCS = SPI_interface.c
+SRCS = SPI_interface.c main.c
 
 # Object files
 OBJS = $(SRCS:.c=.o)
