@@ -51,6 +51,7 @@ void test(){
   gpioWrite(CS_GPIO, 0);
   printf("0");
   fflush(stdout);
+  sleep(3);
 }
 /**
  * @brief Set GPIO value (HIGH or LOW).
