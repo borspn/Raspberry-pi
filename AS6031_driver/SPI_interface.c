@@ -1,96 +1,66 @@
 #include "SPI_interface.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <linux/spi/spidev.h>
-#include <gpiod.h>
-#include <string.h>
+#include <wiringPi.h>
+#include <wiringPiSPI.h>
 
-#define SPI_DEVICE "/dev/spidev0.0"
-#define GPIO_CHIP "/dev/gpiochip0"  // GPIO chip device
-#define CS_GPIO 10 // Chip select pin
+#define SPI_CHANNEL 0  // SPI channel (0 corresponds to /dev/spidev0.0)
+#define SPI_SPEED 500000 // SPI speed in Hz
+#define CS_GPIO 10 // GPIO pin for chip select (WiringPi numbering)
 
-int spi_fd;  // SPI file descriptor
-struct gpiod_chip *chip;
-struct gpiod_line *cs_line;
-
-/**
- * @brief Initialize GPIO for Chip Select (CS) using libgpiod
- */
-void init_gpio(int pin) {
-    chip = gpiod_chip_open(GPIO_CHIP);
-    if (!chip) {
-        perror("Failed to open GPIO chip");
+// Function to initialize SPI
+void spi_init()
+{
+    if (wiringPiSetup() == -1)
+    {
+        perror("Failed to initialize WiringPi");
         exit(1);
     }
 
-    cs_line = gpiod_chip_get_line(chip, pin);
-    if (!cs_line) {
-        perror("Failed to get GPIO line");
-        gpiod_chip_close(chip);
+    pinMode(CS_GPIO, OUTPUT); // Set CS pin as output
+    digitalWrite(CS_GPIO, HIGH); // Set CS HIGH (inactive)
+
+    if (wiringPiSPISetup(SPI_CHANNEL, SPI_SPEED) < 0)
+    {
+        perror("Failed to initialize SPI");
         exit(1);
     }
 
-    if (gpiod_line_request_output(cs_line, "spi_cs", 1) < 0) {
-        perror("Failed to request GPIO as output");
-        gpiod_chip_close(chip);
-        exit(1);
-    }
-}
-
-/**
- * @brief Set GPIO value (HIGH or LOW)
- */
-void set_gpio(int pin, int value) {
-    if (!cs_line) {
-        fprintf(stderr, "GPIO not initialized!\n");
-        return;
-    }
-    gpiod_line_set_value(cs_line, value);
-}
-
-/**
- * @brief Read GPIO value (HIGH or LOW)
- */
-int read_gpio(int pin) {
-    if (!cs_line) {
-        fprintf(stderr, "GPIO not initialized!\n");
-        return -1;
-    }
-    return gpiod_line_get_value(cs_line);
-}
-
-/**
- * @brief Initialize SPI communication
- */
-void spi_init() {
-    spi_fd = open(SPI_DEVICE, O_RDWR);
-    if (spi_fd < 0) {
-        perror("Failed to open SPI device");
-        exit(1);
-    }
-
-    uint8_t mode = SPI_MODE_0;
-    ioctl(spi_fd, SPI_IOC_WR_MODE, &mode);
-
-    uint32_t speed = 500000; // 500 kHz
-    ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
-
-    init_gpio(CS_GPIO);  // Initialize GPIO for Chip Select
-    set_gpio(CS_GPIO, 1); // Default HIGH (inactive)
     printf("SPI initialized!\n");
 }
 
-/**
- * @brief Close SPI and release GPIO resources
- */
-void spi_close() {
-    close(spi_fd);
-    gpiod_line_release(cs_line);
-    gpiod_chip_close(chip);
-    printf("SPI closed and GPIO released.\n");
+// Function to close SPI (Not needed in WiringPi but kept for consistency)
+void spi_close()
+{
+    printf("SPI closed!\n");
+}
+
+// Function to set GPIO HIGH/LOW
+void set_gpio(int pin, int value)
+{
+    digitalWrite(pin, value);
+}
+
+// Function to read GPIO value
+int read_gpio(int pin)
+{
+    return digitalRead(pin);
+}
+
+// Function to send SPI data
+void spi_write(uint8_t *data, int length)
+{
+    digitalWrite(CS_GPIO, LOW); // Pull CS LOW
+    wiringPiSPIDataRW(SPI_CHANNEL, data, length);
+    digitalWrite(CS_GPIO, HIGH); // Pull CS HIGH
+}
+
+// Function to read data over SPI
+void spi_read(uint8_t *data, int length)
+{
+    digitalWrite(CS_GPIO, LOW); // Pull CS LOW
+    wiringPiSPIDataRW(SPI_CHANNEL, data, length);
+    digitalWrite(CS_GPIO, HIGH); // Pull CS HIGH
 }
 
 void Write_Opcode(uint8_t one_byte)
