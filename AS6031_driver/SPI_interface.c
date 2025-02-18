@@ -1,67 +1,61 @@
 #include "SPI_interface.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <wiringPi.h>
-#include <wiringPiSPI.h>
+#include <pigpio.h>
 
-#define SPI_CHANNEL 0  // SPI channel (0 corresponds to /dev/spidev0.0)
-#define SPI_SPEED 500000 // SPI speed in Hz
-#define CS_GPIO 10 // GPIO pin for chip select (WiringPi numbering)
+#define SPI_CHANNEL 0  // SPI device (spidev0.0)
+#define SPI_SPEED 500000 // 500 kHz
+#define CS_GPIO 10 // Chip Select GPIO pin
 
-// Function to initialize SPI
-void spi_init()
-{
-    if (wiringPiSetup() == -1)
-    {
-        perror("Failed to initialize WiringPi");
+int spi_handle;
+
+/**
+ * @brief Initialize SPI communication using pigpio.
+ */
+void spi_init() {
+    if (gpioInitialise() < 0) {
+        fprintf(stderr, "Failed to initialize pigpio!\n");
         exit(1);
     }
 
-    pinMode(CS_GPIO, OUTPUT); // Set CS pin as output
-    digitalWrite(CS_GPIO, HIGH); // Set CS HIGH (inactive)
-
-    if (wiringPiSPISetup(SPI_CHANNEL, SPI_SPEED) < 0)
-    {
-        perror("Failed to initialize SPI");
+    // Open SPI device
+    spi_handle = spiOpen(SPI_CHANNEL, SPI_SPEED, 0);
+    if (spi_handle < 0) {
+        fprintf(stderr, "Failed to open SPI device!\n");
+        gpioTerminate();
         exit(1);
     }
 
-    printf("SPI initialized!\n");
+    // Set CS GPIO as output and default HIGH (inactive)
+    gpioSetMode(CS_GPIO, PI_OUTPUT);
+    gpioWrite(CS_GPIO, 1);
+
+    printf("SPI initialized using pigpio!\n");
 }
 
-// Function to close SPI (Not needed in WiringPi but kept for consistency)
-void spi_close()
-{
-    printf("SPI closed!\n");
+/**
+ * @brief Close SPI and release GPIO resources.
+ */
+void spi_close() {
+    spiClose(spi_handle);
+    gpioTerminate();
+    printf("SPI closed and GPIO released.\n");
 }
 
-// Function to set GPIO HIGH/LOW
-void set_gpio(int pin, int value)
-{
-    digitalWrite(pin, value);
+/**
+ * @brief Set GPIO value (HIGH or LOW).
+ */
+void set_gpio(int pin, int value) {
+    gpioWrite(pin, value);
 }
 
-// Function to read GPIO value
-int read_gpio(int pin)
-{
-    return digitalRead(pin);
+/**
+ * @brief Read GPIO value (HIGH or LOW).
+ */
+int read_gpio(int pin) {
+    return gpioRead(pin);
 }
 
-// Function to send SPI data
-void spi_write(uint8_t *data, int length)
-{
-    digitalWrite(CS_GPIO, LOW); // Pull CS LOW
-    wiringPiSPIDataRW(SPI_CHANNEL, data, length);
-    digitalWrite(CS_GPIO, HIGH); // Pull CS HIGH
-}
-
-// Function to read data over SPI
-void spi_read(uint8_t *data, int length)
-{
-    digitalWrite(CS_GPIO, LOW); // Pull CS LOW
-    wiringPiSPIDataRW(SPI_CHANNEL, data, length);
-    digitalWrite(CS_GPIO, HIGH); // Pull CS HIGH
-}
 
 void Write_Opcode(uint8_t one_byte)
 {
