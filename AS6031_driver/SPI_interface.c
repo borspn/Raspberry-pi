@@ -59,8 +59,12 @@ void set_gpio(int pin, int value) {
  */
 int read_gpio(int pin) {
   gpioWrite(CS_GPIO, 1);
+  printf("1");
+  fflush(stdout);
   sleep(3);
   gpioWrite(CS_GPIO, 0);
+  printf("0");
+  fflush(stdout);
 
 }
 
