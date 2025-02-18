@@ -5,125 +5,92 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
+#include <gpiod.h>
 #include <string.h>
 
 #define SPI_DEVICE "/dev/spidev0.0"
-#define CS_GPIO 10 // Set this to the GPIO pin used for CS
+#define GPIO_CHIP "/dev/gpiochip0"  // GPIO chip device
+#define CS_GPIO 10 // Chip select pin
 
-int spi_fd; // SPI file descriptor
+int spi_fd;  // SPI file descriptor
+struct gpiod_chip *chip;
+struct gpiod_line *cs_line;
 
-// Function to read GPIO value from sysfs
-int read_gpio(int pin)
-{
-  char path[50];
-  sprintf(path, "/sys/class/gpio/gpio%d/value", pin);
-  int fd = open(path, O_RDONLY);
-  if (fd < 0)
-  {
-    perror("Failed to read GPIO");
-    return -1;
-  }
+/**
+ * @brief Initialize GPIO for Chip Select (CS) using libgpiod
+ */
+void init_gpio(int pin) {
+    chip = gpiod_chip_open(GPIO_CHIP);
+    if (!chip) {
+        perror("Failed to open GPIO chip");
+        exit(1);
+    }
 
-  char value;
-  read(fd, &value, 1);
-  close(fd);
+    cs_line = gpiod_chip_get_line(chip, pin);
+    if (!cs_line) {
+        perror("Failed to get GPIO line");
+        gpiod_chip_close(chip);
+        exit(1);
+    }
 
-  return (value == '1') ? 1 : 0; // Convert char to int
+    if (gpiod_line_request_output(cs_line, "spi_cs", 1) < 0) {
+        perror("Failed to request GPIO as output");
+        gpiod_chip_close(chip);
+        exit(1);
+    }
 }
 
-void set_gpio(int pin, int value)
-{
-  char path[50];
-  sprintf(path, "/sys/class/gpio/gpio%d/value", pin);
-  int fd = open(path, O_WRONLY);
-  if (fd < 0)
-  {
-    perror("Failed to set GPIO");
-    return;
-  }
-  write(fd, value ? "1" : "0", 1);
-  close(fd);
+/**
+ * @brief Set GPIO value (HIGH or LOW)
+ */
+void set_gpio(int pin, int value) {
+    if (!cs_line) {
+        fprintf(stderr, "GPIO not initialized!\n");
+        return;
+    }
+    gpiod_line_set_value(cs_line, value);
 }
 
-// Function to export and set up GPIO for CS
-void init_gpio(int pin)
-{
-  char path[50];
-  sprintf(path, "/sys/class/gpio/export");
-  int fd = open(path, O_WRONLY);
-  if (fd >= 0)
-  {
-    char buf[3];
-    sprintf(buf, "%d", pin);
-    write(fd, buf, strlen(buf));
-    close(fd);
-  }
-
-  sprintf(path, "/sys/class/gpio/gpio%d/direction", pin);
-  fd = open(path, O_WRONLY);
-  if (fd >= 0)
-  {
-    write(fd, "out", 3);
-    close(fd);
-  }
+/**
+ * @brief Read GPIO value (HIGH or LOW)
+ */
+int read_gpio(int pin) {
+    if (!cs_line) {
+        fprintf(stderr, "GPIO not initialized!\n");
+        return -1;
+    }
+    return gpiod_line_get_value(cs_line);
 }
 
-// Function to initialize SPI
-void spi_init()
-{
-  spi_fd = open(SPI_DEVICE, O_RDWR);
-  if (spi_fd < 0)
-  {
-    perror("Failed to open SPI device");
-    exit(1);
-  }
+/**
+ * @brief Initialize SPI communication
+ */
+void spi_init() {
+    spi_fd = open(SPI_DEVICE, O_RDWR);
+    if (spi_fd < 0) {
+        perror("Failed to open SPI device");
+        exit(1);
+    }
 
-  uint8_t mode = SPI_MODE_0; // Use manual CS
-  ioctl(spi_fd, SPI_IOC_WR_MODE, &mode);
+    uint8_t mode = SPI_MODE_0;
+    ioctl(spi_fd, SPI_IOC_WR_MODE, &mode);
 
-  uint32_t speed = 500000; // 500 kHz
-  ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
+    uint32_t speed = 500000; // 500 kHz
+    ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
 
-  init_gpio(CS_GPIO);   // Set up CS pin
-  set_gpio(CS_GPIO, 1); // Default HIGH (inactive)
-  printf("SPI initialized!\n");
+    init_gpio(CS_GPIO);  // Initialize GPIO for Chip Select
+    set_gpio(CS_GPIO, 1); // Default HIGH (inactive)
+    printf("SPI initialized!\n");
 }
 
-// Function to send SPI data
-void spi_write(uint8_t *data, int length)
-{
-  set_gpio(CS_GPIO, 0); // Pull CS LOW
-  struct spi_ioc_transfer transfer = {
-      .tx_buf = (unsigned long)data,
-      .rx_buf = 0,
-      .len = length,
-      .speed_hz = 500000,
-      .bits_per_word = 8,
-      .delay_usecs = 0};
-  ioctl(spi_fd, SPI_IOC_MESSAGE(1), &transfer);
-  set_gpio(CS_GPIO, 1); // Pull CS HIGH
-}
-
-// Function to read data over SPI
-void spi_read(uint8_t *data, int length)
-{
-  set_gpio(CS_GPIO, 0); // Pull CS LOW to start transaction
-  struct spi_ioc_transfer transfer = {
-      .tx_buf = 0,
-      .rx_buf = (unsigned long)data,
-      .len = length,
-      .speed_hz = 500000,
-      .bits_per_word = 8,
-      .delay_usecs = 0};
-  ioctl(spi_fd, SPI_IOC_MESSAGE(1), &transfer);
-  set_gpio(CS_GPIO, 1); // Pull CS HIGH to end transaction
-}
-
-// Function to close SPI
-void spi_close()
-{
-  close(spi_fd);
-  system("echo 17 > /sys/class/gpio/unexport");
+/**
+ * @brief Close SPI and release GPIO resources
+ */
+void spi_close() {
+    close(spi_fd);
+    gpiod_line_release(cs_line);
+    gpiod_chip_close(chip);
+    printf("SPI closed and GPIO released.\n");
 }
 
 void Write_Opcode(uint8_t one_byte)
