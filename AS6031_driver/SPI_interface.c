@@ -49,7 +49,7 @@ void spi_close()
 void write(uint8_t *data, int len)
 {
     gpioWrite(CS_GPIO, 1);
-    spiWrite(spi_handle, data, len);
+    spiwrite(data, len);
     gpioWrite(CS_GPIO, 0);
 }
 /**
@@ -77,7 +77,7 @@ void Write_Opcode(uint8_t one_byte)
     printf("CS_GPIO = %d !\n", gpioRead(CS_GPIO));
     fflush(stdout);
 
-    write(spi_handle, &one_byte, 1); // Send opcode
+    write(&one_byte, 1); // Send opcode
 
     gpioWrite(CS_GPIO, 1); // Deactivate CS (High)
     printf("CS_GPIO = %d !\n", gpioRead(CS_GPIO));
@@ -98,7 +98,7 @@ void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword)
     spiTX[4] = (dword >> 8) & 0xFF;
     spiTX[5] = dword & 0xFF;
 
-    write(spi_handle, spiTX, 6);
+    write(spiTX, 6);
 }
 
 /**
@@ -113,7 +113,7 @@ void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte)
     spiTX[2] = address & 0xFF;
     spiTX[3] = byte;
 
-    write(spi_handle, spiTX, 4);
+    write(spiTX, 4);
 }
 
 /**
@@ -163,5 +163,5 @@ uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint
 void Write_Opcode2(uint8_t byte1, uint8_t byte2)
 {
     uint8_t spiTX[2] = {byte1, byte2};
-    write(spi_handle, spiTX, 2);
+    write(spiTX, 2);
 }
