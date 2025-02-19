@@ -31,7 +31,7 @@ void spi_init()
 
     // Set CS GPIO as output and default HIGH (inactive)
     gpioSetMode(CS_GPIO, PI_OUTPUT);
-    gpioWrite(CS_GPIO, 1);
+    gpioWrite(CS_GPIO, 0);
 
     printf("SPI initialized using pigpio!\n");
 }
@@ -48,35 +48,21 @@ void spi_close()
 
 void write(uint8_t *data, int len)
 {
+    gpioWrite(CS_GPIO, 1); // Activate CS (Low)
     spiWrite(spi_handle, data, len);
+    gpioWrite(CS_GPIO, 0); // Deactivate CS (High)
 }
-/**
- * @brief Set GPIO value (HIGH or LOW).
- */
-void set_gpio(int pin, int value)
-{
-    gpioWrite(pin, value);
-}
-
-/**
- * @brief Read GPIO value (HIGH or LOW).
- */
-int read_gpio(int pin)
-{
-    return gpioRead(pin);
-}
-
 /**
  * @brief Write a single opcode byte via SPI.
  */
 void Write_Opcode(uint8_t one_byte)
 {
-    gpioWrite(CS_GPIO, 1); // Activate CS (Low)
+    //gpioWrite(CS_GPIO, 1); // Activate CS (Low)
     printf("CS_GPIO = %d !\n", gpioRead(CS_GPIO));
     fflush(stdout);
 
     write(&one_byte, 1); // Send opcode
-    gpioWrite(CS_GPIO, 0); // Activate CS (Low)
+    //gpioWrite(CS_GPIO, 0); // Activate CS (Low)
     printf("CS_GPIO = %d !\n", gpioRead(CS_GPIO));
     fflush(stdout);
 }
