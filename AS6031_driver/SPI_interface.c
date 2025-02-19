@@ -49,7 +49,7 @@ void spi_close()
 void write(uint8_t *data, int len)
 {
     gpioWrite(CS_GPIO, 1);
-    spiwrite(data, len);
+    spiWrite(data, len);
     gpioWrite(CS_GPIO, 0);
 }
 /**
