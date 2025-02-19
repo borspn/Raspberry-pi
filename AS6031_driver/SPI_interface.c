@@ -57,14 +57,7 @@ void write(uint8_t *data, int len)
  */
 void Write_Opcode(uint8_t one_byte)
 {
-    //gpioWrite(CS_GPIO, 1); // Activate CS (Low)
-    printf("CS_GPIO = %d !\n", gpioRead(CS_GPIO));
-    fflush(stdout);
-
     write(&one_byte, 1); // Send opcode
-    //gpioWrite(CS_GPIO, 0); // Activate CS (Low)
-    printf("CS_GPIO = %d !\n", gpioRead(CS_GPIO));
-    fflush(stdout);
 }
 
 /**
