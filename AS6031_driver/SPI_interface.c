@@ -50,6 +50,7 @@ void write(uint8_t *data, int len)
 {
     gpioWrite(CS_GPIO, 0);
     spiWrite(spi_handle, data, len);
+    sleep(1);
     gpioWrite(CS_GPIO, 1);
 }
 /**
