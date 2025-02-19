@@ -73,88 +73,84 @@ int main()
     spi_init();
     printf("main!\n");
     fflush(stdout);
-    while (1)
+
+    AS6031_Init_CFG(&DUT, Reg);
+    Write_Opcode(RC_SYS_RST);
+
+    DUT.State = AS6031_STATE_RESET;
+
+    sleep(3); // Datasheet -> Delay = 1ms... BUT at least 3ms are needed _MH
+
+    // Write Configuration (0xC0 - 0xCE, 0xD0 - 0xD2, 0xDA - 0xDB)
+    int offset = 0;
+    int i, j = 0;
+
+    for (i = 0; i <= 19; i++)
     {
-        test();
+        if (i == 0)
+        {
+            offset = 0xC0;
+            j = 0;
+        }
+        if (i == 15)
+        {
+            offset = 0xD0;
+            j = 0;
+        }
+        if (i == 18)
+        {
+            offset = 0xDA;
+            j = 0;
+        }
+        Write_Dword(RC_RAA_WR, (offset + j), DUT.CR[i]);
+        j++;
     }
 
-    // AS6031_Init_CFG(&DUT, Reg);
-    // Write_Opcode(RC_SYS_RST);
+    // FW Handling Procedures
+    // Datasheet Appendix, section 15.7
+    // Phase 1: Wait time (dependent on start option)
+    // Phase 2: Preparation (common for all procedures)
+    // Phase 3: FW Update (different for procedures [A], [B], [C], [D] )
+    // Phase 4: FW Retention Check (common for all procedures)
+    printf("phase1!\n");
+    fflush(stdout);
+    // Phase1: Initial Wait Time
+    Write_Opcode(RC_MCT_ON);
+    DUT.State = AS6031_STATE_RESET;
 
-    // DUT.State = AS6031_STATE_RESET;
+    sleep(3);
 
-    // sleep(3); // Datasheet -> Delay = 1ms... BUT at least 3ms are needed _MH
+    // Phase 2: Preparation
+    Write_Opcode(RC_BM_REQ);
+    Write_Dword(RC_RAA_WR, 0xC0, 0x48DBA399);
+        Read_Dword(RC_RAA_WR, 0xC0);
+    Write_Dword(RC_RAA_WR, 0xCD, 0x40100000);
+    Write_Dword(RC_RAA_WR, 0xC6, 0x00001000);
+    Write_Opcode(RC_SV_INIT);
+    Write_Opcode(RC_MCT_OFF);
+    sleep(1);
+    Write_Opcode2(RC_MT_REQ, 0x00);
+    sleep(1);
+    Write_Dword(RC_RAA_WR, 0xDD, 0x00000007);
+    Write_Opcode(RC_RF_CLR);
+    Write_Dword(RC_RAA_WR, 0xC4, 0x000AF000);
+    Write_Opcode(RC_BM_RLS);
+    Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
+    Write_Dword(RC_RAA_WR, 0xDE, 0x00100000);
+    printf("while 1!\n");
+    fflush(stdout);
+    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
+    {
+    };
+    Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
+    printf("while 2!\n");
+    fflush(stdout);
+    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
+    {
+    };
 
-    // // Write Configuration (0xC0 - 0xCE, 0xD0 - 0xD2, 0xDA - 0xDB)
-    // int offset = 0;
-    // int i, j = 0;
-
-    // for (i = 0; i <= 19; i++)
-    // {
-    //     if (i == 0)
-    //     {
-    //         offset = 0xC0;
-    //         j = 0;
-    //     }
-    //     if (i == 15)
-    //     {
-    //         offset = 0xD0;
-    //         j = 0;
-    //     }
-    //     if (i == 18)
-    //     {
-    //         offset = 0xDA;
-    //         j = 0;
-    //     }
-    //     Write_Dword(RC_RAA_WR, (offset + j), DUT.CR[i]);
-    //     j++;
-    // }
-
-    // // FW Handling Procedures
-    // // Datasheet Appendix, section 15.7
-    // // Phase 1: Wait time (dependent on start option)
-    // // Phase 2: Preparation (common for all procedures)
-    // // Phase 3: FW Update (different for procedures [A], [B], [C], [D] )
-    // // Phase 4: FW Retention Check (common for all procedures)
-    // printf("phase1!\n");
-    // fflush(stdout);
-    // // Phase1: Initial Wait Time
-    // Write_Opcode(RC_MCT_ON);
-    // DUT.State = AS6031_STATE_RESET;
-
-    // sleep(3);
-
-    // // Phase 2: Preparation
-    // Write_Opcode(RC_BM_REQ);
-    // Write_Dword(RC_RAA_WR, 0xC0, 0x48DBA399);
-    //     Read_Dword(RC_RAA_WR, 0xC0);
-    // Write_Dword(RC_RAA_WR, 0xCD, 0x40100000);
-    // Write_Dword(RC_RAA_WR, 0xC6, 0x00001000);
-    // Write_Opcode(RC_SV_INIT);
-    // Write_Opcode(RC_MCT_OFF);
-    // sleep(1);
-    // Write_Opcode2(RC_MT_REQ, 0x00);
-    // sleep(1);
-    // Write_Dword(RC_RAA_WR, 0xDD, 0x00000007);
-    // Write_Opcode(RC_RF_CLR);
-    // Write_Dword(RC_RAA_WR, 0xC4, 0x000AF000);
-    // Write_Opcode(RC_BM_RLS);
-    // Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
-    // Write_Dword(RC_RAA_WR, 0xDE, 0x00100000);
-    // printf("while 1!\n");
-    // fflush(stdout);
-    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    // {
-    // };
-    // Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
-    // printf("while 2!\n");
-    // fflush(stdout);
-    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    // {
-    // };
-
-    // printf("phase 3!\n");
-    // fflush(stdout);
+    printf("phase 3!\n");
+    fflush(stdout);
 
     // // Phase 3: FW Update
     // Read_Dword(RC_RAA_RD, 0xEC);
