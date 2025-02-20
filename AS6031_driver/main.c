@@ -76,16 +76,14 @@ void gpio_callback(int gpio, int level, uint32_t tick)
 
 bool configureISR()
 {
-    // Set up the GPIO as an input
     gpioSetMode(INTERRUPT_GPIO_PIN, PI_INPUT);
-    // Set up the ISR
     gpioSetPullUpDown(INTERRUPT_GPIO_PIN, PI_PUD_UP);
-
-    if (gpioSetISRFunc(INTERRUPT_GPIO_PIN, EITHER_EDGE, 0, gpio_callback) < 0)
+    if (gpioSetAlertFunc(INTERRUPT_GPIO_PIN, gpio_callback) < 0)
     {
-        printf("Failed to set ISR function! Error code: %d\n", gpioSetISRFunc(INTERRUPT_GPIO_PIN, EITHER_EDGE, 0, gpio_callback));
-        return false;
+        printf("Failed to set alert function!\n");
+        return 1;
     }
+
     return true;
 }
 
