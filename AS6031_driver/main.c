@@ -84,7 +84,6 @@ bool configureISR()
     if (gpioSetISRFunc(INTERRUPT_GPIO_PIN, EITHER_EDGE, 0, gpio_callback) < 0)
     {
         printf("Failed to set ISR function!\n");
-        gpioTerminate();
         return false;
     }
     return true;
