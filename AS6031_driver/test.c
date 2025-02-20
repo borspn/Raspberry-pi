@@ -19,7 +19,7 @@ int main()
     gpioSetMode(PIN, PI_INPUT);
     gpioSetPullUpDown(PIN, PI_PUD_UP);
 
-    if (gpioSetISRFunc(PIN, EITHER_EDGE, 0, callback) < 0)
+    if (gpioSetISRFunc(PIN, EITHER_EDGE, 1000, callback) < 0)
     {
         printf("Failed to set ISR!\n");
         return 1;
