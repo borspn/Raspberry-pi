@@ -10,6 +10,7 @@
 #include "SPI_interface.h"
 
 #define TIME_ns(x) (float)(x * 1000000000.0) // result in [ns]
+#define INTERRUPT_GPIO_PIN 24
 
 /* USER CODE BEGIN PV */
 AS6031_InitTypeDef DUT;        // DUT = Device Under Test
@@ -67,10 +68,30 @@ uint8_t FWC[] = {
 
 int FWC_Length = sizeof(FWC);
 
-#define SPI_DEVICE "/dev/spidev0.0"
+void gpio_callback(int gpio, int level, uint32_t tick)
+{
+    printf("Interrupt detected on GPIO %d! Level: %d, Timestamp: %u\n", gpio, level, tick);
+}
+
+void configureISR()
+{
+    // Set up the GPIO as an input
+    gpioSetMode(INTERRUPT_GPIO_PIN, PI_INPUT);
+    // Set up the ISR
+    gpioSetPullUpDown(INTERRUPT_GPIO_PIN, PI_PUD_UP);
+
+    if (gpioSetISRFunc(INTERRUPT_GPIO_PIN, EITHER_EDGE, 0, gpio_callback) < 0)
+    {
+        printf("Failed to set ISR function!\n");
+        gpioTerminate();
+        return 1;
+    }
+}
+
 int main()
 {
     spi_init();
+    configureISR();
     printf("main!\n");
     fflush(stdout);
 
