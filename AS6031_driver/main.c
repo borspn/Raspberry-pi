@@ -152,37 +152,37 @@ int main()
     printf("phase 3!\n");
     fflush(stdout);
 
-    // // Phase 3: FW Update
-    // Read_Dword(RC_RAA_RD, 0xEC);
+    // Phase 3: FW Update
+    Read_Dword(RC_RAA_RD, 0xEC);
 
-    // // Write FWC
-    // for (i = 32; i <= FWC_Length; i++)
-    // {
-    //     Write_Byte2(RC_FWC_WR, i, FWC[i]); // Writing FWC, bytewise with two byte address
-    // }
+    // Write FWC
+    for (i = 32; i <= FWC_Length; i++)
+    {
+        Write_Byte2(RC_FWC_WR, i, FWC[i]); // Writing FWC, bytewise with two byte address
+    }
 
-    // // Write FWD
-    // Write_Dword(RC_RAA_WR_NVRAM, 0x00, 0x0000AB6A); // Writing Firmware Code User, Checksum
-    // Write_Dword(RC_RAA_WR_NVRAM, 0x01, 0x00000556); // Writing Firmware Data User, Checksum
-    // Write_Dword(RC_RAA_WR_NVRAM, 0x02, 0x00010000); // Writing FWD_SIMPLE_SCALE (fd16)
-    // Write_Dword(RC_RAA_WR_NVRAM, 0x03, 0x00000000); // Writing FWD_ZERO_OFFSET
-    // Write_Dword(RC_RAA_WR_NVRAM, 0x04, 0x051EB852); // Writing FWD_MAX_TOF_DIFF
-    // Write_Dword(RC_RAA_WR_NVRAM, 0x05, 0xFAE147AE); // Writing FWD_NEG_TOF_DIFF_LIMIT
+    // Write FWD
+    Write_Dword(RC_RAA_WR_NVRAM, 0x00, 0x0000AB6A); // Writing Firmware Code User, Checksum
+    Write_Dword(RC_RAA_WR_NVRAM, 0x01, 0x00000556); // Writing Firmware Data User, Checksum
+    Write_Dword(RC_RAA_WR_NVRAM, 0x02, 0x00010000); // Writing FWD_SIMPLE_SCALE (fd16)
+    Write_Dword(RC_RAA_WR_NVRAM, 0x03, 0x00000000); // Writing FWD_ZERO_OFFSET
+    Write_Dword(RC_RAA_WR_NVRAM, 0x04, 0x051EB852); // Writing FWD_MAX_TOF_DIFF
+    Write_Dword(RC_RAA_WR_NVRAM, 0x05, 0xFAE147AE); // Writing FWD_NEG_TOF_DIFF_LIMIT
 
-    // Write_Dword(RC_RAA_WR_NVRAM, 0x5B, 0x0000000A); // Writing FWD_R_PULSE_PER_LITER
-    // Write_Dword(RC_RAA_WR_NVRAM, 0x5C, 0x000003E8); // Writing FWD_R_PULSE_MAX_FLOW
+    Write_Dword(RC_RAA_WR_NVRAM, 0x5B, 0x0000000A); // Writing FWD_R_PULSE_PER_LITER
+    Write_Dword(RC_RAA_WR_NVRAM, 0x5C, 0x000003E8); // Writing FWD_R_PULSE_MAX_FLOW
 
-    // Write_Dword(RC_RAA_WR_NVRAM, 0x67, 0x00000000); // Writing FWD_USM_RLS_DLY_INIT
+    Write_Dword(RC_RAA_WR_NVRAM, 0x67, 0x00000000); // Writing FWD_USM_RLS_DLY_INIT
 
-    // Write_Dword(RC_RAA_WR_NVRAM, 0x6B, 0xABCD7654); // Writing Boot-Loader Release Code
+    Write_Dword(RC_RAA_WR_NVRAM, 0x6B, 0xABCD7654); // Writing Boot-Loader Release Code
 
-    // Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
-    // Write_Dword(RC_RAA_WR, 0xDE, 0x00010000);
-    // printf("while 3!\n");
-    // fflush(stdout);
-    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    // {
-    // };
+    Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
+    Write_Dword(RC_RAA_WR, 0xDE, 0x00010000);
+    printf("while 3!\n");
+    fflush(stdout);
+    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
+    {
+    };
 
     // // Phase 4: FW Retention Check
     // Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
