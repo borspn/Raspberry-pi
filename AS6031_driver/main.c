@@ -184,64 +184,66 @@ int main()
     {
     };
 
-    // // Phase 4: FW Retention Check
-    // Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
-    // Write_Dword(RC_RAA_WR, 0xDE, 0x00100000);
-    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    // {
-    // };
-    // printf("while 4!\n");
-    // fflush(stdout);
-    // Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
-    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    // {
-    // };
-    // printf("while 5!\n");
-    // fflush(stdout);
-    // Write_Dword(RC_RAA_WR, 0xD3, 0x0007F000);
-    // sleep(3); // After initialization checksum error flags, sleep of at least 34ms are needed _MH
-    // Write_Opcode(RC_FW_CHKSUM);
-    // printf("while 6 !\n");
-    // fflush(stdout);
-    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 3, 3) == 0)
-    // {
-    // };
-    // Read_Dword(RC_RAA_RD, 0xD3);
+    // Phase 4: FW Retention Check
+    Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
+    Write_Dword(RC_RAA_WR, 0xDE, 0x00100000);
+    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
+    {
+    };
+    printf("while 4!\n");
+    fflush(stdout);
+    Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
+    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
+    {
+    };
+    printf("while 5!\n");
+    fflush(stdout);
+    Write_Dword(RC_RAA_WR, 0xD3, 0x0007F000);
+    sleep(3); // After initialization checksum error flags, sleep of at least 34ms are needed _MH
+    Write_Opcode(RC_FW_CHKSUM);
+    printf("while 6 !\n");
+    fflush(stdout);
+    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 3, 3) == 0)
+    {
+    };
+    Read_Dword(RC_RAA_RD, 0xD3);
 
-    // // END
-    // Write_Opcode(RC_SYS_RST);
+    // END
+    Write_Opcode(RC_SYS_RST);
 
-    // while (1)
-    // {
-    //     /* USER CODE END WHILE */
+    while (1)
+    {
+        printf("main while\n");
+        fflush(stdout);
+        /* USER CODE END WHILE */
 
-    //     /* USER CODE BEGIN 3 */
-    //     N_Measure_Cycles++;
+        /* USER CODE BEGIN 3 */
+        N_Measure_Cycles++;
 
-    //     // Wait for INTN
-    //     // NVIC Functionality to increase the speed of MCU
-    //     while ((My_INTN_State == 1))
-    //     {
-    //     }; // timeout is missing
+        // Wait for INTN
+        // NVIC Functionality to increase the speed of MCU
+        while ((My_INTN_State == 1))
+        {
+        }; // timeout is missing
 
-    //     // Post Processing
+        // Post Processing
 
-    //     // RAW_Result = Read_Dword(RC_RAA_RD, 0x80);  // FDB_US_TOF_SUM_OF_ALL_U
-    //     // RAW_Result = Read_Dword(RC_RAA_RD, 0x84);  // FDB_US_TOF_SUM_OF_ALL_D
-    //     // RAW_Result /= DUT.Param.CR10.TOF_HIT_SUM_NO;  // Divided by number of hits
+        // RAW_Result = Read_Dword(RC_RAA_RD, 0x80);  // FDB_US_TOF_SUM_OF_ALL_U
+        // RAW_Result = Read_Dword(RC_RAA_RD, 0x84);  // FDB_US_TOF_SUM_OF_ALL_D
+        // RAW_Result /= DUT.Param.CR10.TOF_HIT_SUM_NO;  // Divided by number of hits
 
-    //     RAW_Result = Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
+        RAW_Result = Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
 
-    //     RAW_Result /= 65536; // divided by 2^16
-    //     Time_Result = RAW_Result * 250 * (1e-9);
+        RAW_Result /= 65536; // divided by 2^16
+        Time_Result = RAW_Result * 250 * (1e-9);
 
-    //     Time_Result_ns = TIME_ns(Time_Result); // result in [ns]
+        Time_Result_ns = TIME_ns(Time_Result); // result in [ns]
 
-    //     // Clear INTN
-    //     Write_Opcode(RC_IF_CLR);
+        // Clear INTN
+        Write_Opcode(RC_IF_CLR);
 
-    //     sleep(50); // used for debugging
-    // }
-    // /* USER CODE END 3 */
-    // return 0;
+        sleep(50); // used for debugging
+    }
+    /* USER CODE END 3 */
+    return 0;
 }
