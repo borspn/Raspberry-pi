@@ -73,7 +73,7 @@ void gpio_callback(int gpio, int level, uint32_t tick)
     printf("Interrupt detected on GPIO %d! Level: %d, Timestamp: %u\n", gpio, level, tick);
 }
 
-void configureISR()
+bool configureISR()
 {
     // Set up the GPIO as an input
     gpioSetMode(INTERRUPT_GPIO_PIN, PI_INPUT);
