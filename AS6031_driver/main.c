@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include "SPI_interface.h"
 
@@ -84,8 +85,9 @@ bool configureISR()
     {
         printf("Failed to set ISR function!\n");
         gpioTerminate();
-        return 1;
+        return false;
     }
+    return true;
 }
 
 int main()
