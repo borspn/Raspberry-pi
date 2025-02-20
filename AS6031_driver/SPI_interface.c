@@ -44,7 +44,7 @@ void spi_close()
 void write(uint8_t *data, int len)
 {
     PUT_SSN_HIGH;
-    spiWrite(spi_handle, data, len);
+    spiWrite(spi_handle, (char *)data, len);
     PUT_SSN_LOW;
 }
 
@@ -96,7 +96,7 @@ uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
     uint8_t spiTX[2] = {rd_opcode, address};
     uint8_t spiRX[6] = {0};
 
-    spiXfer(spi_handle, spiTX, spiRX, 6); // Send opcode/address, receive data
+    spiXfer(spi_handle, spiTX, (char *)spiRX, 6); // Send opcode/address, receive data
 
     uint32_t temp_u32 = (spiRX[2] << 24) | (spiRX[3] << 16) | (spiRX[4] << 8) | spiRX[5];
 
