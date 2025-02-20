@@ -1,11 +1,6 @@
 #include "SPI_interface.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <pigpio.h>
-
-#define SPI_CHANNEL 0    // SPI device (spidev0.0)
-#define SPI_SPEED 500000 // 500 kHz
-#define CS_GPIO 25       // Chip Select GPIO pin
 
 int spi_handle;
 
@@ -48,10 +43,11 @@ void spi_close()
 
 void write(uint8_t *data, int len)
 {
-    gpioWrite(CS_GPIO, 1); // Activate CS (Low)
+    PUT_SSN_HIGH;
     spiWrite(spi_handle, data, len);
-    gpioWrite(CS_GPIO, 0); // Deactivate CS (High)
+    PUT_SSN_LOW;
 }
+
 /**
  * @brief Write a single opcode byte via SPI.
  */
@@ -104,8 +100,6 @@ uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
 
     uint32_t temp_u32 = (spiRX[2] << 24) | (spiRX[3] << 16) | (spiRX[4] << 8) | spiRX[5];
 
-    printf("temp_u32 == %d!\n", temp_u32);
-    fflush(stdout);
     return temp_u32;
 }
 
@@ -128,8 +122,6 @@ uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint
     uint32_t bit_mask = (1U << (msbit - lsbit + 1)) - 1;
     uint32_t temp_u32 = (address_content >> lsbit) & bit_mask;
 
-    printf("temp_u32 == %d!\n", temp_u32);
-    fflush(stdout);
     return temp_u32;
 }
 

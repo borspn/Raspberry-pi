@@ -1,20 +1,14 @@
 #include <stdint.h>
+#include <pigpio.h>
 
 #define SPI_CHANNEL 0     // Use SPI channel 0
 #define SPI_SPEED 1000000 // SPI speed (1 MHz)
+#define CS_GPIO 25        // Chip Select GPIO pin
 
-// Define GPIO pins using BCM numbering
-#define GPIO_PIN_MISO 9
-#define GPIO_PIN_MOSI 10
-#define GPIO_PIN_SCK 11
-#define GPIO_PIN_SSN 8
-
-#define SSN_PIN 10 // Define the SSN pin (BCM numbering)
-#define HIGH 1
 #define LOW 0
-#define PUT_SSN_HIGH digitalWrite(SSN_PIN, HIGH) // Put SSN low - Activate, SSN -> CLK = < 4us
-#define PUT_SSN_LOW digitalWrite(SSN_PIN, LOW)   // Put SSN low - Activate, SSN -> CLK = < 4us
-#define READ_SSN_PIN digitalRead(SSN_PIN) 
+#define HIGH 1
+#define PUT_SSN_LOW gpioWrite(CS_GPIO, LOW)
+#define PUT_SSN_HIGH gpioWrite(CS_GPIO, HIGH)
 
 extern void Write_Opcode(uint8_t one_byte);
 void set_gpio(int pin, int value);
