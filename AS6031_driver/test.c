@@ -1,33 +1,29 @@
-#include <stdio.h>
-#include <pigpio.h>
-
-#define PIN 24
-
-void callback(int gpio, int level, uint32_t tick)
+void gpio_callback(int gpio, int level, uint32_t tick)
 {
-    printf("Interrupt on GPIO %d, Level: %d, Time: %u\n", gpio, level, tick);
+    printf("Interrupt detected on GPIO %d, level: %d, tick: %u\n", gpio, level, tick);
 }
 
 int main()
 {
-    if (gpioInitialise() < 0)
+    if (gpioInitialise() < 0) 
     {
-        printf("Failed to initialize GPIO!\n");
+        printf("Failed to initialize pigpio!\n");
         return 1;
     }
 
-    gpioSetMode(PIN, PI_INPUT);
-    gpioSetPullUpDown(PIN, PI_PUD_UP);
+    gpioSetMode(INTERRUPT_GPIO_PIN, PI_INPUT);
+    gpioSetPullUpDown(INTERRUPT_GPIO_PIN, PI_PUD_UP);  // Set pull-up resistor if needed
 
-    if (gpioSetISRFunc(PIN, EITHER_EDGE, 1000, callback) < 0)
+    if (gpioSetAlertFunc(INTERRUPT_GPIO_PIN, gpio_callback) < 0)
     {
-        printf("Failed to set ISR!\n");
+        printf("Failed to set alert function!\n");
         return 1;
     }
 
-    printf("Waiting for interrupts...\n");
     while (1)
-        sleep(1);
+    {
+        sleep(1);  // Keep the program running
+    }
 
     gpioTerminate();
     return 0;
