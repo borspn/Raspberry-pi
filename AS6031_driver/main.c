@@ -11,7 +11,7 @@
 #include "SPI_interface.h"
 
 #define TIME_ns(x) (float)(x * 1000000000.0) // result in [ns]
-#define INTERRUPT_GPIO_PIN 24
+#define INTERRUPT_GPIO_PIN 23
 
 /* USER CODE BEGIN PV */
 AS6031_InitTypeDef DUT;        // DUT = Device Under Test
