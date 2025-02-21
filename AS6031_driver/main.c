@@ -72,6 +72,7 @@ int FWC_Length = sizeof(FWC);
 void gpio_callback(int gpio, int level, uint32_t tick)
 {
     printf("Interrupt detected on GPIO %d! Level: %d, Timestamp: %u\n", gpio, level, tick);
+    My_INTN_State = 0;
 }
 
 bool configureISR()
@@ -259,10 +260,13 @@ int main()
 
         Time_Result_ns = TIME_ns(Time_Result); // result in [ns]
 
+        printf("Time_Result: %f\n", Time_Result);
+        printf("Time_Result_ns: %f\n", Time_Result_ns);
+        fflush(stdout);
+
         // Clear INTN
         Write_Opcode(RC_IF_CLR);
-
-        sleep(50); // used for debugging
+        My_INTN_State = 1;
     }
     /* USER CODE END 3 */
     return 0;
