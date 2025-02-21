@@ -81,9 +81,8 @@ bool configureISR()
     if (gpioSetAlertFunc(INTERRUPT_GPIO_PIN, gpio_callback) < 0)
     {
         printf("Failed to set alert function!\n");
-        return 1;
         return false;
-
+    }
     return true;
 }
 
