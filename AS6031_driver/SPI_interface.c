@@ -41,7 +41,7 @@ void spi_close()
     printf("SPI closed and GPIO released.\n");
 }
 
-void write(uint8_t *data, int len)
+void spiSend(uint8_t *data, int len)
 {
     PUT_SSN_HIGH;
     spiWrite(spi_handle, (char *)data, len);
@@ -53,7 +53,7 @@ void write(uint8_t *data, int len)
  */
 void Write_Opcode(uint8_t one_byte)
 {
-    write(&one_byte, 1); // Send opcode
+    spiSend(&one_byte, 1); // Send opcode
 }
 
 /**
@@ -70,7 +70,7 @@ void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword)
     spiTX[4] = (dword >> 8) & 0xFF;
     spiTX[5] = dword & 0xFF;
 
-    write(spiTX, 6);
+    spiSend(spiTX, 6);
 }
 
 /**
@@ -85,7 +85,7 @@ void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte)
     spiTX[2] = address & 0xFF;
     spiTX[3] = byte;
 
-    write(spiTX, 4);
+    spiSend(spiTX, 4);
 }
 
 /**
@@ -108,15 +108,13 @@ uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
  */
 uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint8_t lsbit)
 {
-    printf("Read_Dword_Bits!\n");
-    fflush(stdout);
 
     if (msbit > 31)
         msbit = 31;
-    if (lsbit > 31)
+    if (msbit >= 32)
+        msbit = 31;
+    if (lsbit >= 32)
         lsbit = 31;
-    if (lsbit > msbit)
-        lsbit = msbit;
 
     uint32_t address_content = Read_Dword(rd_opcode, address);
     uint32_t bit_mask = (1U << (msbit - lsbit + 1)) - 1;
@@ -131,5 +129,5 @@ uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint
 void Write_Opcode2(uint8_t byte1, uint8_t byte2)
 {
     uint8_t spiTX[2] = {byte1, byte2};
-    write(spiTX, 2);
+    spiSend(spiTX, 2);
 }

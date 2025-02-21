@@ -1,5 +1,4 @@
 #include <fcntl.h>
-#include <unistd.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
 #include "AS6031_Coding.h"
@@ -83,7 +82,7 @@ bool configureISR()
     {
         printf("Failed to set alert function!\n");
         return 1;
-    }
+        return false;
 
     return true;
 }
@@ -177,7 +176,7 @@ int main()
     Read_Dword(RC_RAA_RD, 0xEC);
 
     // Write FWC
-    for (i = 32; i <= FWC_Length; i++)
+    for (i = 32; i < FWC_Length; i++)
     {
         Write_Byte2(RC_FWC_WR, i, FWC[i]); // Writing FWC, bytewise with two byte address
     }
@@ -243,9 +242,19 @@ int main()
 
         // Wait for INTN
         // NVIC Functionality to increase the speed of MCU
-        while ((My_INTN_State == 1))
+        int timeout = 1000; // Timeout in milliseconds
+        while ((My_INTN_State == 1) && (timeout > 0))
         {
-        }; // timeout is missing
+            usleep(1000); // Sleep for 1 millisecond
+            timeout--;
+        }
+        if (timeout == 0)
+        {
+            printf("Timeout occurred while waiting for INTN\n");
+            fflush(stdout);
+        }
+        RAW_Result = (float)Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
+        RAW_Result = (float)Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
 
         // Post Processing
 
@@ -255,7 +264,7 @@ int main()
 
         RAW_Result = Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
 
-        RAW_Result /= 65536; // divided by 2^16
+        RAW_Result /= 65536.0; // divided by 2^16
         Time_Result = RAW_Result * 250 * (1e-9);
 
         Time_Result_ns = TIME_ns(Time_Result); // result in [ns]
