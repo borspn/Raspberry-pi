@@ -237,7 +237,7 @@ int main()
         printf("main while\n");
         fflush(stdout);
         /* USER CODE END WHILE */
-
+        sleep(1);
         /* USER CODE BEGIN 3 */
         N_Measure_Cycles++;
 
