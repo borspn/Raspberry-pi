@@ -18,6 +18,8 @@ void spi_close();
 void Write_Opcode(uint8_t one_byte);
 // Writes a 32-bit word to the specified address using the given opcode
 void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword);
+// Writes a byte to a specified address using the given opcode
+void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte);
 // Reads a 32-bit word from a specified address using the given read opcode
 uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address);
 // Reads a specified number of bits from a 32-bit word at a specified address using the given read opcode
