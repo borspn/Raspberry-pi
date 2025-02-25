@@ -231,7 +231,6 @@ int main()
 
     configureISR();
 
-
     while (1)
     {
         printf("main while\n");
@@ -243,27 +242,20 @@ int main()
 
         // Wait for INTN
         // NVIC Functionality to increase the speed of MCU
-        while (My_INTN_State == 1) 
-        {
-            usleep(1000); // Sleep for 1 millisecond
-        }
-        RAW_Result = (float)Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
-        
-        printf("RAW_Result: %f\n", RAW_Result);
-        fflush(stdout);
+        while (My_INTN_State == 1){}
+        RAW_Result = Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
 
-        RAW_Result /= 65536.0; // divided by 2^16
+        RAW_Result /= 65536; // divided by 2^16
         Time_Result = RAW_Result * 250 * (1e-9);
 
         Time_Result_ns = TIME_ns(Time_Result); // result in [ns]
 
-        printf("Time_Result: %f\n", Time_Result);
-        printf("Time_Result_ns: %f\n", Time_Result_ns);
+        printf("Time_Result: %d\n", Time_Result);
+        printf("Time_Result_ns: %d\n", Time_Result_ns);
         fflush(stdout);
 
-        // Clear INTN
-        Write_Opcode(RC_IF_CLR);
         My_INTN_State = 1;
+        Write_Opcode(RC_IF_CLR);
     }
     /* USER CODE END 3 */
     return 0;
