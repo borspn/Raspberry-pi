@@ -249,6 +249,8 @@ int main()
         }
         RAW_Result = (float)Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
         
+        printf("RAW_Result: %f\n", RAW_Result);
+        fflush(stdout);
 
         RAW_Result /= 65536.0; // divided by 2^16
         Time_Result = RAW_Result * 250 * (1e-9);
