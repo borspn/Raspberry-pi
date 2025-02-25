@@ -243,27 +243,12 @@ int main()
 
         // Wait for INTN
         // NVIC Functionality to increase the speed of MCU
-        int timeout = 1000; // Timeout in milliseconds
-        while ((My_INTN_State == 1) && (timeout > 0))
-        {
+        while ((My_INTN_State == 1) 
             usleep(1000); // Sleep for 1 millisecond
             timeout--;
         }
-        if (timeout == 0)
-        {
-            printf("Timeout occurred while waiting for INTN\n");
-            fflush(stdout);
-        }
         RAW_Result = (float)Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
-        RAW_Result = (float)Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
-
-        // Post Processing
-
-        // RAW_Result = Read_Dword(RC_RAA_RD, 0x80);  // FDB_US_TOF_SUM_OF_ALL_U
-        // RAW_Result = Read_Dword(RC_RAA_RD, 0x84);  // FDB_US_TOF_SUM_OF_ALL_D
-        // RAW_Result /= DUT.Param.CR10.TOF_HIT_SUM_NO;  // Divided by number of hits
-
-        RAW_Result = Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
+        
 
         RAW_Result /= 65536.0; // divided by 2^16
         Time_Result = RAW_Result * 250 * (1e-9);
