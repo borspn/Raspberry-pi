@@ -244,8 +244,8 @@ int main()
         // Wait for INTN
         // NVIC Functionality to increase the speed of MCU
         while ((My_INTN_State == 1) 
+        {
             usleep(1000); // Sleep for 1 millisecond
-            timeout--;
         }
         RAW_Result = (float)Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
         
