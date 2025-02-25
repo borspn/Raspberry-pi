@@ -243,7 +243,7 @@ int main()
 
         // Wait for INTN
         // NVIC Functionality to increase the speed of MCU
-        while ((My_INTN_State == 1) 
+        while (My_INTN_State == 1) 
         {
             usleep(1000); // Sleep for 1 millisecond
         }
