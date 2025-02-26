@@ -88,8 +88,10 @@ bool configureISR()
 
 int main()
 {
-    configureISR();
     spi_init();
+
+    configureISR();
+
     printf("main!\n");
     fflush(stdout);
 
@@ -230,8 +232,6 @@ int main()
     // END
     Write_Opcode(RC_SYS_RST);
 
-    
-
     while (1)
     {
         printf("main while\n");
@@ -243,7 +243,9 @@ int main()
 
         // Wait for INTN
         // NVIC Functionality to increase the speed of MCU
-        while (My_INTN_State == 1){}
+        while (My_INTN_State == 1)
+        {
+        }
         RAW_Result = Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
 
         RAW_Result /= 65536; // divided by 2^16
