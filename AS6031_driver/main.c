@@ -250,8 +250,8 @@ int main()
 
         Time_Result_ns = TIME_ns(Time_Result); // result in [ns]
 
-        printf("Time_Result: %d\n", Time_Result);
-        printf("Time_Result_ns: %d\n", Time_Result_ns);
+        printf("Time_Result: %f\n", Time_Result);
+        printf("Time_Result_ns: %f\n", Time_Result_ns);
         fflush(stdout);
 
         My_INTN_State = 1;
