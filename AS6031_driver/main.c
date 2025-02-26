@@ -88,6 +88,7 @@ bool configureISR()
 
 int main()
 {
+    configureISR();
     spi_init();
     printf("main!\n");
     fflush(stdout);
@@ -229,7 +230,7 @@ int main()
     // END
     Write_Opcode(RC_SYS_RST);
 
-    configureISR();
+    
 
     while (1)
     {
