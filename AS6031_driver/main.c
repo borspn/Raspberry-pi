@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include "SPI_interface.h"
 
-#define TIME_ns(x) (float)(x * 1000000000.0) // result in [ns]
+#define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
 
 /* USER CODE BEGIN PV */
@@ -100,7 +100,7 @@ int main()
 
     DUT.State = AS6031_STATE_RESET;
 
-    sleep(3); // Datasheet -> Delay = 1ms... BUT at least 3ms are needed _MH
+    usleep(3000); // Datasheet -> Delay = 1ms... BUT at least 3ms are needed _MH
 
     // Write Configuration (0xC0 - 0xCE, 0xD0 - 0xD2, 0xDA - 0xDB)
     int offset = 0;
@@ -162,13 +162,13 @@ int main()
     fflush(stdout);
     while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
     {
-    };
+    }
     Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
     printf("while 2!\n");
     fflush(stdout);
     while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
     {
-    };
+    }
 
     printf("phase 3!\n");
     fflush(stdout);
