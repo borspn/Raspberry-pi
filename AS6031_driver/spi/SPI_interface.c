@@ -48,19 +48,12 @@ static void spiReceive(int spi_handle, char *dataTx, char *dataRx, int len)
     PUT_SSN_HIGH;
 }
 
-static void spiSend(uint8_t *data, int len)
-{
-    PUT_SSN_LOW;
-    spiWrite(spi_handle, (char *)data, len);
-    PUT_SSN_HIGH;
-}
-
 /**
  * @brief Write a single opcode byte via SPI.
  */
 void Write_Opcode(uint8_t one_byte)
 {
-    spiSend(&one_byte, 1); // Send opcode
+    spiWrite(spi_handle, &one_byte, 1); // Send opcode
 }
 
 /**
@@ -77,7 +70,7 @@ void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword)
     spiTX[4] = (dword >> 8) & 0xFF;
     spiTX[5] = dword & 0xFF;
 
-    spiSend(spiTX, 6);
+    spiWrite(spi_handle, spiTX, 6);
 }
 
 /**
@@ -92,7 +85,7 @@ void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte)
     spiTX[2] = address & 0xFF;
     spiTX[3] = byte;
 
-    spiSend(spiTX, 4);
+    spiWrite(spi_handle, spiTX, 4);
 }
 
 /**
@@ -136,5 +129,5 @@ uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint
 void Write_Opcode2(uint8_t byte1, uint8_t byte2)
 {
     uint8_t spiTX[2] = {byte1, byte2};
-    spiSend(spiTX, 2);
+    spiWrite(spi_handle, spiTX, 2);
 }
