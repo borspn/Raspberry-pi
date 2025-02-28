@@ -88,20 +88,16 @@ bool configureISR()
 
 int main()
 {
-    if (spi_init() != 0)
-    {
-        printf("SPI initialization failed!\n");
-        return -1;
-    }
     printf("main!\n");
     fflush(stdout);
 
+    spi_init();
     AS6031_Init_CFG(&DUT, Reg);
     Write_Opcode(RC_SYS_RST);
 
     DUT.State = AS6031_STATE_RESET;
 
-    sleep(3); // Datasheet -> Delay = 1ms... BUT at least 3ms are needed _MH
+    usleep(3000); // Datasheet -> Delay = 1ms... BUT at least 3ms are needed _MH
 
     // Write Configuration (0xC0 - 0xCE, 0xD0 - 0xD2, 0xDA - 0xDB)
     int offset = 0;
@@ -246,7 +242,9 @@ int main()
 
         // Wait for INTN
         // NVIC Functionality to increase the speed of MCU
-        while (My_INTN_State == 1){}
+        while (My_INTN_State == 1)
+        {
+        }
         RAW_Result = Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
 
         RAW_Result /= 65536; // divided by 2^16
