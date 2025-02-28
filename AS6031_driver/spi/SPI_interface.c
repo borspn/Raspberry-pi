@@ -99,7 +99,7 @@ uint32_t Read_Dword(char rd_opcode, uint8_t address)
 /**
  * @brief Read specific bits from a double word.
  */
-uint32_t Read_Dword_Bits(char rd_opcode, char address, uint8_t msbit, uint8_t lsbit)
+uint32_t Read_Dword_Bits(char rd_opcode, uint8_t address, uint8_t msbit, uint8_t lsbit)
 {
 
     if (msbit > 31)
