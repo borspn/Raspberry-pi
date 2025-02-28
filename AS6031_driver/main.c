@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include "SPI_interface.h"
 
-#define TIME_ns(x) (float)(x * 1000000000.0) // result in [ns]
+#define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
 
 /* USER CODE BEGIN PV */
@@ -88,7 +88,11 @@ bool configureISR()
 
 int main()
 {
-    spi_init();
+    if (spi_init() != 0)
+    {
+        printf("SPI initialization failed!\n");
+        return -1;
+    }
     printf("main!\n");
     fflush(stdout);
 
