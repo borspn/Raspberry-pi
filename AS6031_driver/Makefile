@@ -4,7 +4,7 @@
 CC = gcc
 
 # Compiler flags
-CFLAGS = -Wall -O2
+CFLAGS = -Wall -O2 -I./scioSenseLib -I./spi
 
 # Include directories
 INCLUDES = -I/usr/local/include
@@ -16,24 +16,24 @@ LIBDIRS = -L/usr/local/lib
 LIBS = -lpigpio -lpthread
 
 # Source files
-SRCS = SPI_interface.c main.c
+SRCS = main.c spi/SPI_interface.c
 
 # Object files
 OBJS = $(SRCS:.c=.o)
 
 # Executable name
-TARGET = spi_program
+TARGET = as6031_driver
 
 # Default target
 all: $(TARGET)
 
 # Rule to build the executable
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(INCLUDES) $(LIBDIRS) -o $(TARGET) $(OBJS) $(LIBS)
+	$(CC) $(CFLAGS) $(LIBDIRS) -o $(TARGET) $(OBJS) $(LIBS)
 
 # Rule to compile source files into object files
 %.o: %.c
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # Clean up build files
 clean:
