@@ -15,14 +15,14 @@ void spi_init();
 // Closes the SPI interface
 void spi_close();
 // Writes a single byte as an opcode
-void Write_Opcode(uint8_t one_byte);
+void Write_Opcode(char one_byte);
 // Writes a 32-bit word to the specified address using the given opcode
-void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword);
+void Write_Dword(char opcode, uint8_t address, uint32_t dword);
 // Writes a byte to a specified address using the given opcode
-void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte);
+void Write_Byte2(char opcode, uint16_t address, uint8_t byte);
 // Reads a 32-bit word from a specified address using the given read opcode
-uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address);
+uint32_t Read_Dword(char rd_opcode, uint8_t address);
 // Reads a specified number of bits from a 32-bit word at a specified address using the given read opcode
-uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint8_t lsbit);
+uint32_t Read_Dword_Bits(char rd_opcode, uint8_t address, uint8_t msbit, uint8_t lsbit);
 // Writes two bytes as an opcode
-void Write_Opcode2(uint8_t byte1, uint8_t byte2);
+void Write_Opcode2(char byte1, char byte2);

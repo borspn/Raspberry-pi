@@ -44,7 +44,7 @@ void spi_close()
 /**
  * @brief Write a single opcode byte via SPI.
  */
-void Write_Opcode(uint8_t one_byte)
+void Write_Opcode(char one_byte)
 {
     spiWrite(spi_handle, &one_byte, 1); // Send opcode
 }
@@ -52,9 +52,9 @@ void Write_Opcode(uint8_t one_byte)
 /**
  * @brief Write one double word (4 bytes).
  */
-void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword)
+void Write_Dword(char opcode, char address, uint32_t dword)
 {
-    uint8_t spiTX[6];
+    char spiTX[6];
 
     spiTX[0] = opcode;
     spiTX[1] = address;
@@ -71,7 +71,7 @@ void Write_Dword(uint8_t opcode, uint8_t address, uint32_t dword)
  */
 void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte)
 {
-    uint8_t spiTX[4];
+    char spiTX[4];
 
     spiTX[0] = opcode;
     spiTX[1] = (address >> 8) & 0xFF;
@@ -84,12 +84,12 @@ void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte)
 /**
  * @brief Read a double word (4 bytes) via SPI.
  */
-uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
+uint32_t Read_Dword(char rd_opcode, char address)
 {
-    uint8_t spiTX[2] = {rd_opcode, address};
-    uint8_t spiRX[6] = {0};
+    char spiTX[2] = {rd_opcode, address};
+    char spiRX[6] = {0};
 
-    spiXfer(spi_handle, (char *)spiTX, (char *)spiRX, 6); // Send opcode/address, receive data
+    spiXfer(spi_handle, spiTX, spiRX, 6); // Send opcode/address, receive data
 
     uint32_t temp_u32 = (spiRX[2] << 24) | (spiRX[3] << 16) | (spiRX[4] << 8) | spiRX[5];
 
@@ -99,7 +99,7 @@ uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
 /**
  * @brief Read specific bits from a double word.
  */
-uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint8_t lsbit)
+uint32_t Read_Dword_Bits(char rd_opcode, char address, uint8_t msbit, uint8_t lsbit)
 {
 
     if (msbit > 31)
@@ -119,8 +119,8 @@ uint32_t Read_Dword_Bits(uint8_t rd_opcode, uint8_t address, uint8_t msbit, uint
 /**
  * @brief Write two bytes via SPI.
  */
-void Write_Opcode2(uint8_t byte1, uint8_t byte2)
+void Write_Opcode2(char byte1, char byte2)
 {
-    uint8_t spiTX[2] = {byte1, byte2};
+    char spiTX[2] = {byte1, byte2};
     spiWrite(spi_handle, spiTX, 2);
 }
