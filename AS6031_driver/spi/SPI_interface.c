@@ -41,13 +41,6 @@ void spi_close()
     printf("SPI closed and GPIO released.\n");
 }
 
-static void spiReceive(int spi_handle, char *dataTx, char *dataRx, int len)
-{
-    PUT_SSN_LOW;
-    spiXfer(spi_handle, dataTx, dataRx, len);
-    PUT_SSN_HIGH;
-}
-
 /**
  * @brief Write a single opcode byte via SPI.
  */
@@ -96,7 +89,7 @@ uint32_t Read_Dword(uint8_t rd_opcode, uint8_t address)
     uint8_t spiTX[2] = {rd_opcode, address};
     uint8_t spiRX[6] = {0};
 
-    spiReceive(spi_handle, (char *)spiTX, (char *)spiRX, 6); // Send opcode/address, receive data
+    spiXfer(spi_handle, (char *)spiTX, (char *)spiRX, 6); // Send opcode/address, receive data
 
     uint32_t temp_u32 = (spiRX[2] << 24) | (spiRX[3] << 16) | (spiRX[4] << 8) | spiRX[5];
 
