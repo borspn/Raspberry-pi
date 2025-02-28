@@ -52,7 +52,7 @@ void Write_Opcode(char one_byte)
 /**
  * @brief Write one double word (4 bytes).
  */
-void Write_Dword(char opcode, char address, uint32_t dword)
+void Write_Dword(char opcode, uint8_t address, uint32_t dword)
 {
     char spiTX[6];
 
@@ -69,7 +69,7 @@ void Write_Dword(char opcode, char address, uint32_t dword)
 /**
  * @brief Write one byte with a 16-bit address.
  */
-void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte)
+void Write_Byte2(char opcode, uint16_t address, uint8_t byte)
 {
     char spiTX[4];
 
@@ -84,7 +84,7 @@ void Write_Byte2(uint8_t opcode, uint16_t address, uint8_t byte)
 /**
  * @brief Read a double word (4 bytes) via SPI.
  */
-uint32_t Read_Dword(char rd_opcode, char address)
+uint32_t Read_Dword(char rd_opcode, uint8_t address)
 {
     char spiTX[2] = {rd_opcode, address};
     char spiRX[6] = {0};
