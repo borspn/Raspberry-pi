@@ -216,14 +216,14 @@ int main()
     };
     printf("while 5!\n");
     fflush(stdout);
-    Write_Dword(RC_RAA_WR, 0xD3, 0x0007F000);
-    sleep(3); // After initialization checksum error flags, sleep of at least 34ms are needed _MH
-    Write_Opcode(RC_FW_CHKSUM);
-    printf("while 6 !\n");
-    fflush(stdout);
-    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 3, 3) == 0)
-    {
-    };
+    // Write_Dword(RC_RAA_WR, 0xD3, 0x0007F000);
+    // sleep(3); // After initialization checksum error flags, sleep of at least 34ms are needed _MH
+    // Write_Opcode(RC_FW_CHKSUM);
+    // printf("while 6 !\n");
+    // fflush(stdout);
+    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 3, 3) == 0)
+    // {
+    // };
     Read_Dword(RC_RAA_RD, 0xD3);
 
     // END
