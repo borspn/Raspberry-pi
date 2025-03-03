@@ -227,7 +227,7 @@ int main()
     Read_Dword(RC_RAA_RD, 0xD3);
 
     // END
-    Write_Opcode(RC_SYS_RST);
+    //Write_Opcode(RC_SYS_RST);
 
     configureISR();
 
