@@ -50,6 +50,16 @@ uint32_t MyRAWAMCVL;
 uint32_t MyRAWPWUP;
 uint32_t MyRAWPWDOWN;
 
+float MyTOFSumAvgUP;
+float MyTOFSumAvgDOWN;
+float MyDiffTOFSumAvg;
+float MyRealAMUP;
+float MyRealAMDOWN;
+float MyRealPWUP;
+float MyRealPWDOWN;
+float MyRealHSClk;
+
+
 // Configuration: using plastic spool piece plastic Audiowell New-Design, V-Shape
 uint32_t Reg[20] = {
     0x48DBA399, // [0xC0] CR_WD_DIS
