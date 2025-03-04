@@ -361,7 +361,7 @@ void My_Time_Conversion_Mode(void)
                     {
                         MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
                         MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
-                        printf("MyRAWAMCVH%d MyRAWAMCVL%d\n", MyRAWAMCVH, MyRAWAMCVL);  
+                        printf("MyRAWAMCVH%d MyRAWAMCVL%d\n", MyRAWAMCVH, MyRAWAMCVL);
                         fflush(stdout);
                     }
 
@@ -503,6 +503,8 @@ int main()
         /* Reload Configuration */
         if (My_New_Configuration > 0)
         {
+            printf("My_New_Configuration > 0\n");
+            fflush(stdout);
             My_Chip_initialized = 0;
             My_Chip_config_1 = 0;
             My_Chip_config_2 = 0;
@@ -513,6 +515,8 @@ int main()
 
             if (My_New_Configuration != 99)
             {
+                printf("My_New_Configuration != 99\n");
+                fflush(stdout);
                 // AS6031_ST_NS
                 // strcpy(My_Configuration, "AS6031_ST_NS");
                 My_Chip_config_2 = 1;
@@ -533,6 +537,8 @@ int main()
         // Initialisation of DUT will be cleared
         if (Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG))
         {
+            printf("Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG)\n");
+            fflush(stdout);
             My_Chip_initialized = 0;
             My_Init_State();
         }
