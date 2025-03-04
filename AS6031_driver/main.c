@@ -15,9 +15,7 @@
 
 // volatile bool My_INTN_State = false;
 volatile uint8_t My_INTN_State = 1; /* low active */
-// For Debugging
-volatile uint8_t My_Chip_initialized = 0;
-volatile uint8_t My_Chip_idle_state = 0;
+
 // *** debug - for watchdog reading
 volatile uint32_t watchdog_value = 0;
 
@@ -119,7 +117,7 @@ uint8_t FWC[] = {
 
 int FWC_Length = sizeof(FWC);
 
-* @brief  This function takes about ~88�s, using POW() two times! Means,
+/* @brief  This function takes about ~88�s, using POW() two times! Means,
 *             each function call of POW() takes approx. 40�s AND header 
 *             file is needed! 
 *                     #include <tgmath.h>
