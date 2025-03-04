@@ -71,8 +71,6 @@ volatile uint8_t My_Chip_config_2 = 0;
 volatile uint8_t My_Chip_config_3 = 0;
 volatile uint8_t My_Chip_idle_state = 0;
 
-
-
 // Firmware Code: <AS6031_AS6040_A1.F1.11.01_DIF_over_PI_sim.hex>
 uint8_t FWC[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -164,47 +162,47 @@ void writeConfig(void)
 {
 #undef HS_CLOCK
 #define HS_CLOCK 4e6
-// Configuration: using plastic spool piece plastic Audiowell New-Design, V-Shape
-uint32_t CFG_Registers[20] = {
-    0x48DBA399, // [0xC0] CR_WD_DIS
-    0x00800401, // [0xC1] CR_IFC_CTRL
-    0x00000000, // [0xC2] CR_GP_CTRL
-    0x00000001, // [0xC3] CR_USM_OPT
-    0x0011F7FF, // [0xC4] CR_IEH
-    0x6046EF29, // [0xC5] CR_CPM
-    0x01012100, // [0xC6] CR_MRG_TS
-    0x00240000, // [0xC7] CR_TPM
-    0x006807E4, // [0xC8] CR_USM_PRC
-    0x60160204, // [0xC9] CR_USM_FRC
-    0x010FEA14, // [0xCA] CR_USM_TOF
-    0x23A4DE81, // [0xCB] CR_USM_AM
-    0x94A0C46C, // [0xCC] CR_TRIM1
-    0x401100C4, // [0xCD] CR_TRIM2
-    0x00A7400F, // [0xCE] CR_TRIM3
-    0x00000001, // [0xD0] SHR_TOF_RATE
-    0x000015E0, // [0xD1] SHR_USM_RLS_DLY_U
-    0x000015E0, // [0xD2] SHR_USM_RLS_DLY_D
-    0x0000004B, // [0xDA] SHR_ZCD_FHL_U
-    0x0000004B  // [0xDB] SHR_ZCD_FHL_D
-};
-//TRIM2 adjusted, 0x401100C7 -> 0x401100C4
-  //Extracting needed data
-  TOF_HIT_NO = CFG_Registers[0xA];
-  TOF_HIT_NO &= TOF_HIT_NO_mask;
-  TOF_HIT_NO >>= 8;
+    // Configuration: using plastic spool piece plastic Audiowell New-Design, V-Shape
+    uint32_t CFG_Registers[20] = {
+        0x48DBA399, // [0xC0] CR_WD_DIS
+        0x00800401, // [0xC1] CR_IFC_CTRL
+        0x00000000, // [0xC2] CR_GP_CTRL
+        0x00000001, // [0xC3] CR_USM_OPT
+        0x0011F7FF, // [0xC4] CR_IEH
+        0x6046EF29, // [0xC5] CR_CPM
+        0x01012100, // [0xC6] CR_MRG_TS
+        0x00240000, // [0xC7] CR_TPM
+        0x006807E4, // [0xC8] CR_USM_PRC
+        0x60160204, // [0xC9] CR_USM_FRC
+        0x010FEA14, // [0xCA] CR_USM_TOF
+        0x23A4DE81, // [0xCB] CR_USM_AM
+        0x94A0C46C, // [0xCC] CR_TRIM1
+        0x401100C4, // [0xCD] CR_TRIM2
+        0x00A7400F, // [0xCE] CR_TRIM3
+        0x00000001, // [0xD0] SHR_TOF_RATE
+        0x000015E0, // [0xD1] SHR_USM_RLS_DLY_U
+        0x000015E0, // [0xD2] SHR_USM_RLS_DLY_D
+        0x0000004B, // [0xDA] SHR_ZCD_FHL_U
+        0x0000004B  // [0xDB] SHR_ZCD_FHL_D
+    };
+    // TRIM2 adjusted, 0x401100C7 -> 0x401100C4
+    // Extracting needed data
+    TOF_HIT_NO = CFG_Registers[0xA];
+    TOF_HIT_NO &= TOF_HIT_NO_mask;
+    TOF_HIT_NO >>= 8;
 
-  //Configuration Register
-  Write_Register_Auto_Incr(RC_RAA_WR_RAM, 0xC0, CFG_Registers, 0xCF);
+    // Configuration Register
+    Write_Register_Auto_Incr(RC_RAA_WR_RAM, 0xC0, CFG_Registers, 0xCF);
 
-  //System Handling Register
-  Write_Dword(RC_RAA_WR_RAM, SHR_TOF_RATE,          0x00000001);  //TOF RATE Lvl
-  Write_Dword(RC_RAA_WR_RAM, SHR_USM_RLS_DLY_U,     0x000015E0);  //Multi-hit Start Delay Up
-  Write_Dword(RC_RAA_WR_RAM, SHR_USM_RLS_DLY_D,     0x000015E0);  //Multi-hit Start Delay Down
-  Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_U,         0x0000004B);  //Zero Cross Detection First Hit Level Up
-//    Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_D,         0x00000087);  //Zero Cross Detection First Hit Level Down
-  Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_D,         0x0000004B);  //Zero Cross Detection First Hit Level Down
+    // System Handling Register
+    Write_Dword(RC_RAA_WR_RAM, SHR_TOF_RATE, 0x00000001);      // TOF RATE Lvl
+    Write_Dword(RC_RAA_WR_RAM, SHR_USM_RLS_DLY_U, 0x000015E0); // Multi-hit Start Delay Up
+    Write_Dword(RC_RAA_WR_RAM, SHR_USM_RLS_DLY_D, 0x000015E0); // Multi-hit Start Delay Down
+    Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_U, 0x0000004B);     // Zero Cross Detection First Hit Level Up
+    //    Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_D,         0x00000087);  //Zero Cross Detection First Hit Level Down
+    Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_D, 0x0000004B); // Zero Cross Detection First Hit Level Down
 
-  return;
+    return;
 }
 
 float Calc_TimeOfFlight(uint32_t TOF_address)
@@ -288,6 +286,8 @@ void Put_UFC_Into_Idle(void)
 
 void My_Time_Conversion_Mode(void)
 {
+    printf("My_Time_Conversion_Mode\n");
+    fflush(stdout);
     /* Time Conversion Mode */
     /* Cylce A = ~ 370 µs @SPI = 2.5 MHz*/
     /* Cylce B = ~ 160 µs @SPI = 2.5 MHz*/
@@ -301,6 +301,8 @@ void My_Time_Conversion_Mode(void)
 
     if (SRR_ERR_FLAG_content > 0)
     {
+        printf("SRR_ERR_FLAG_content > 0\n");
+        fflush(stdout);
         // Error Handling with simplified query
         printf("...error!\n");
         fflush(stdout);
@@ -314,11 +316,15 @@ void My_Time_Conversion_Mode(void)
     }
     else
     {
+        printf("!SRR_ERR_FLAG_content > 0\n");
+        fflush(stdout);
         // Post Processing without any Error
 
         // only if enough time, more than 1 ms
         if (SRR_TS_TIME_content > 1)
         {
+            printf("SRR_TS_TIME_content > 1\n");
+            fflush(stdout);
             // determine min/max value for debugging Cycle A
             if (SRR_TS_TIME_content > My_Max_Value_A)
             {
@@ -343,6 +349,8 @@ void My_Time_Conversion_Mode(void)
                     /* Updating of Ultrasonic amplitude calibration values */
                     MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
                     MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
+                    printf("MyRAWAMCVH%d MyRAWAMCVL%d\n", MyRAWAMCVH, MyRAWAMCVL);
+                    fflush(stdout);
                 }
 
                 if (SRR_FEP_STF_content & (US_AM_UPD_mask))
@@ -353,6 +361,8 @@ void My_Time_Conversion_Mode(void)
                     {
                         MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
                         MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
+                        printf("MyRAWAMCVH%d MyRAWAMCVL%d\n", MyRAWAMCVH, MyRAWAMCVL);  
+                        fflush(stdout);
                     }
 
                     /* If amplitude calibration values are available
@@ -361,6 +371,8 @@ void My_Time_Conversion_Mode(void)
                     {
                         MyRealAMUP = Calc_Amplitude(FDB_US_AM_U, MyRAWAMCVH, MyRAWAMCVL);
                         MyRealAMDOWN = Calc_Amplitude(FDB_US_AM_D, MyRAWAMCVH, MyRAWAMCVL);
+                        printf("MyRealAMUP%f MyRealAMDOWN%f\n", MyRealAMUP, MyRealAMDOWN);
+                        fflush(stdout);
                     }
                 }
 
@@ -369,6 +381,8 @@ void My_Time_Conversion_Mode(void)
                     /* Updating TOF Values */
                     MyTOFSumAvgUP = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_U) / TOF_HIT_NO;
                     MyTOFSumAvgDOWN = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_D) / TOF_HIT_NO;
+                    printf("MyTOFSumAvgUP%f MyTOFSumAvgDOWN%f\n", MyTOFSumAvgUP, MyTOFSumAvgDOWN);
+                    fflush(stdout);
 
                     if (MyTOFSumAvgUP == 0)
                     {
@@ -382,9 +396,13 @@ void My_Time_Conversion_Mode(void)
                     /* Updating Pulse Width Ratio */
                     MyRAWPWUP = Read_Dword(RC_RAA_RD_RAM, FDB_US_PW_U);
                     MyRAWPWDOWN = Read_Dword(RC_RAA_RD_RAM, FDB_US_PW_D);
+                    printf("MyRAWPWUP%d MyRAWPWDOWN%d\n", MyRAWPWUP, MyRAWPWDOWN);
+                    fflush(stdout);
 
                     // post processing and calculation
                     MyDiffTOFSumAvg = (MyTOFSumAvgDOWN - MyTOFSumAvgUP);
+                    printf("MyDiffTOFSumAvg%f\n", MyDiffTOFSumAvg);
+                    fflush(stdout);
 
                     MyRealPWUP = MyRAWPWUP;
                     MyRealPWUP /= (1 << 7);
@@ -395,6 +413,8 @@ void My_Time_Conversion_Mode(void)
                     MyTOFSumAvgUP_ns = MyTOFSumAvgUP / 1e-9;
                     MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
                     MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
+                    printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+                    fflush(stdout);
                 }
             }
 
@@ -436,6 +456,8 @@ int main()
     spi_init();
     while (1)
     {
+        printf("while main!\n");
+        fflush(stdout);
         /* USER CODE END WHILE */
 
         /* USER CODE BEGIN 3 */
@@ -446,6 +468,8 @@ int main()
 
         if ((My_INTN_State == 0) && (My_Chip_initialized == 1))
         {
+            printf("(My_INTN_State == 0) && (My_Chip_initialized == 1)\n");
+            fflush(stdout);
             // *** debug - read the watchdog to make sure it is off
             watchdog_value = Read_Dword(RC_RAA_RD_RAM, SRR_MSC_STF) & (1 << 15);
 
@@ -454,6 +478,8 @@ int main()
             /* Update Configuration */
             if (My_New_FHL_mV > 0)
             {
+                printf("My_New_FHL_mV > 0\n");
+                fflush(stdout);
                 /* Update System Handling Register
                  * SHR_FHL_U (First Hit Level Up) 0x0DA
                  * SHR_FHL_D (First Hit Level Down) 0x0DB
