@@ -454,6 +454,7 @@ int main()
     fflush(stdout);
 
     spi_init();
+    configureISR();
     while (1)
     {
         printf("while main!\n");
