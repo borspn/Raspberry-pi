@@ -54,15 +54,18 @@ void Write_Opcode(char one_byte)
  */
 void Write_Dword(char opcode, uint8_t address, uint32_t dword)
 {
-    char spiTX[6];
+    uint8_t spiTX[6];
+    uint32_t temp_u32 = 0;
 
     spiTX[0] = opcode;
     spiTX[1] = address;
-    spiTX[2] = (dword >> 24) & 0xFF;
-    spiTX[3] = (dword >> 16) & 0xFF;
-    spiTX[4] = (dword >> 8) & 0xFF;
-    spiTX[5] = dword & 0xFF;
+    temp_u32 = dword;
+    spiTX[2] = temp_u32 >> 24;
+    spiTX[3] = temp_u32 >> 16;
+    spiTX[4] = temp_u32 >> 8;
+    spiTX[5] = temp_u32;
 
+    /* 2. Transmit register address */
     spiWrite(spi_handle, spiTX, 6);
 }
 
@@ -84,18 +87,32 @@ void Write_Byte2(char opcode, uint16_t address, uint8_t byte)
 /**
  * @brief Read a double word (4 bytes) via SPI.
  */
+// uint32_t Read_Dword(char rd_opcode, uint8_t address)
+// {
+//     char spiTX[2] = {rd_opcode, address};
+//     char spiRX[6] = {0};
+
+//     spiXfer(spi_handle, spiTX, spiRX, 6); // Send opcode/address, receive data
+
+//     uint32_t temp_u32 = (spiRX[2] << 24) | (spiRX[3] << 16) | (spiRX[4] << 8) | spiRX[5];
+
+//     return temp_u32;
+// }
 uint32_t Read_Dword(char rd_opcode, uint8_t address)
 {
-    char spiTX[2] = {rd_opcode, address};
-    char spiRX[6] = {0};
+    uint8_t spiTX[2];
+    uint8_t spiRX[4];
+    uint32_t temp_u32 = 0;
 
-    spiXfer(spi_handle, spiTX, spiRX, 6); // Send opcode/address, receive data
+    spiTX[0] = rd_opcode;
+    spiTX[1] = address;
 
-    uint32_t temp_u32 = (spiRX[2] << 24) | (spiRX[3] << 16) | (spiRX[4] << 8) | spiRX[5];
+    spiWrite(spi_handle, spiTX, 2); // Send opcode/address, receive data
+    spiRead(spi_handle, spiRX, 4);
+    uint32_t temp_u32 = (spiRX[0] << 24) + (spiRX[1] << 16) + (spiRX[2] << 8) + (spiRX[3]);
 
     return temp_u32;
 }
-
 /**
  * @brief Read specific bits from a double word.
  */
@@ -114,7 +131,7 @@ uint32_t Read_Dword_Bits(char rd_opcode, uint8_t address, uint8_t msbit, uint8_t
     uint32_t temp_u32 = (address_content >> lsbit) & bit_mask;
 
     return temp_u32;
-}
+} // TODO: Clarify this function with ScioSense
 
 /**
  * @brief Write two bytes via SPI.

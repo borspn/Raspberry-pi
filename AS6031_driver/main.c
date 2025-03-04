@@ -8,17 +8,19 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include "SPI_interface.h"
+#include "user_GP30_parameter.h"
 
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
 
 /* USER CODE BEGIN PV */
-AS6031_InitTypeDef DUT;        // DUT = Device Under Test
-volatile int N_Measure_Cycles; // counter for the while loop
-volatile uint8_t My_INTN_State = 1;
-volatile float RAW_Result = 0;     // RAW Value in [LSB]
-volatile float Time_Result = 0;    // Result in [s]
-volatile float Time_Result_ns = 0; // Result in [ns]
+volatile uint32_t My_Loop_Pass_Counter = 0;
+// volatile bool My_INTN_State = false;
+volatile uint8_t My_INTN_State = 1; /* low active */
+// For Debugging
+volatile uint8_t My_Chip_initialized = 0;
+// *** debug - for watchdog reading
+volatile uint32_t watchdog_value = 0;
 
 // Configuration: using plastic spool piece plastic Audiowell New-Design, V-Shape
 uint32_t Reg[20] = {
@@ -74,6 +76,30 @@ void gpio_callback(int gpio, int level, uint32_t tick)
     My_INTN_State = 0;
 }
 
+void My_Init_State(void)
+{
+	/* reset counter */
+	My_INTN_Counter = 0;
+	My_Cycle_A_Counter = 0;
+	My_Cycle_B_Counter = 0;
+	My_Loop_Pass_Counter = 0;
+	My_ERROR_Counter = 0;
+	My_UP_zero = 0;
+	My_DOWN_zero = 0;
+	My_Too_Less_Time = 0;
+
+	/* expand range */
+	My_Min_Value_A = 0xFFFFFFFF;
+	My_Max_Value_A = 0;
+	My_Min_Value_B = 0xFFFFFFFF;
+	My_Max_Value_B = 0;
+
+	My_New_Configuration = 0;
+
+	My_Chip_initialized = 1;
+}
+
+
 bool configureISR()
 {
     gpioSetMode(INTERRUPT_GPIO_PIN, PI_INPUT);
@@ -86,179 +112,233 @@ bool configureISR()
     return true;
 }
 
+void Put_UFC_Into_Idle(void)
+{
+    Write_Opcode(RC_SYS_RST);                           // Reset UFC completely
+    HAL_Delay(10);                                      // delay = 20ms?? only firmware data has no configuration data
+    Write_Dword(RC_RAA_WR_RAM, CR_WD_DIS, WD_DIS_CODE); // STEP 1 - Disable Watchdog by writing code to CR_WD_DIS
+    Write_Opcode(RC_MCT_OFF);
+}
+
+void My_Time_Conversion_Mode(void)
+{
+    /* Time Conversion Mode */
+    /* Cylce A = ~ 370 µs @SPI = 2.5 MHz*/
+    /* Cylce B = ~ 160 µs @SPI = 2.5 MHz*/
+
+    /* STEP 2 - Read SRR_ERR_FLAG to check if any error
+     *  occurred during last measurement cycle */
+    SRR_ERR_FLAG_content = Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG);
+    /* STEP 3 - Read SRR_FEP_STF to check which
+     * measurement has been updated in last measure cycle */
+    SRR_FEP_STF_content = Read_Dword(RC_RAA_RD_RAM, SRR_FEP_STF);
+
+    if (SRR_ERR_FLAG_content > 0)
+    {
+        // Error Handling with simplified query
+        printf("...error!\n");
+        fflush(stdout);
+        My_ERROR_Counter++;
+
+        /* Chip has to be reinitialized */
+        My_Chip_initialized = 0;
+        My_Chip_idle_state = 0;
+        /* Skipping Post Processing
+         * Jump to Step 5 */
+    }
+    else
+    {
+        // Post Processing without any Error
+
+        // only if enough time, more than 1 ms
+        if (SRR_TS_TIME_content > 1)
+        {
+            // determine min/max value for debugging Cycle A
+            if (SRR_TS_TIME_content > My_Max_Value_A)
+            {
+                My_Max_Value_A = SRR_TS_TIME_content;
+            }
+            if (SRR_TS_TIME_content < My_Min_Value_A)
+            {
+                My_Min_Value_A = SRR_TS_TIME_content;
+            }
+
+            /* STEP 4 - read the measurement results
+             * out of the frontend data buffer */
+
+            // Post Processing Cycle A
+            if (SRR_FEP_STF_content & (US_AMC_UPD_mask | US_AM_UPD_mask | US_TOF_EDGE_mask |
+                                       US_TOF_UPD_mask | US_D_UPD_mask | US_U_UPD_mask))
+            {
+                My_Cycle_A_Counter += 1; // counts every call
+
+                if (SRR_FEP_STF_content & (US_AMC_UPD_mask))
+                {
+                    /* Updating of Ultrasonic amplitude calibration values */
+                    MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
+                    MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
+                }
+
+                if (SRR_FEP_STF_content & (US_AM_UPD_mask))
+                {
+                    /* If amplitude calibration values = ZERO
+                     * Reloading amplitude calibration values */
+                    if (MyRAWAMCVH == 0 || MyRAWAMCVL == 0)
+                    {
+                        MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
+                        MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
+                    }
+
+                    /* If amplitude calibration values are available
+                     * Updating amplitude values */
+                    if (MyRAWAMCVH != 0 && MyRAWAMCVL != 0)
+                    {
+                        MyRealAMUP = Calc_Amplitude(FDB_US_AM_U, MyRAWAMCVH, MyRAWAMCVL);
+                        MyRealAMDOWN = Calc_Amplitude(FDB_US_AM_D, MyRAWAMCVH, MyRAWAMCVL);
+                    }
+                }
+
+                if (SRR_FEP_STF_content & (US_TOF_UPD_mask | US_D_UPD_mask | US_U_UPD_mask))
+                {
+                    /* Updating TOF Values */
+                    MyTOFSumAvgUP = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_U) / TOF_HIT_NO;
+                    MyTOFSumAvgDOWN = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_D) / TOF_HIT_NO;
+
+                    if (MyTOFSumAvgUP == 0)
+                    {
+                        My_UP_zero++;
+                    }
+                    if (MyTOFSumAvgDOWN == 0)
+                    {
+                        My_DOWN_zero++;
+                    }
+
+                    /* Updating Pulse Width Ratio */
+                    MyRAWPWUP = Read_Dword(RC_RAA_RD_RAM, FDB_US_PW_U);
+                    MyRAWPWDOWN = Read_Dword(RC_RAA_RD_RAM, FDB_US_PW_D);
+
+                    // post processing and calculation
+                    MyDiffTOFSumAvg = (MyTOFSumAvgDOWN - MyTOFSumAvgUP);
+
+                    MyRealPWUP = MyRAWPWUP;
+                    MyRealPWUP /= (1 << 7);
+                    MyRealPWDOWN = MyRAWPWDOWN;
+                    MyRealPWDOWN /= (1 << 7);
+
+                    // scaling
+                    MyTOFSumAvgUP_ns = MyTOFSumAvgUP / 1e-9;
+                    MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
+                    MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
+                }
+            }
+
+            // determine min/max value for debugging Cycle B
+            if (SRR_TS_TIME_content > My_Max_Value_B)
+            {
+                My_Max_Value_B = SRR_TS_TIME_content;
+            }
+            if (SRR_TS_TIME_content < My_Min_Value_B)
+            {
+                My_Min_Value_B = SRR_TS_TIME_content;
+            }
+
+            // Post Processing Cycle B
+            if (SRR_FEP_STF_content & (TM_ST_mask | TM_MODE_mask | TM_UPD_mask | HCC_UPD_mask))
+            {
+                My_Cycle_B_Counter += 1; // counts every call
+            }
+        }
+        else
+        {
+            // there is not enough time
+            My_Too_Less_Time += 1;
+        }
+
+        /* STEP 5 - Clear interrupt flag, error flag & frontend status
+         * flag register by writing code to SHR_EXC */
+        Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
+        My_INTN_State = 1;
+
+    } // End of Post Processing
+}
+
 int main()
 {
     printf("main!\n");
     fflush(stdout);
 
     spi_init();
-    AS6031_Init_CFG(&DUT, Reg);
-    Write_Opcode(RC_SYS_RST);
-
-    DUT.State = AS6031_STATE_RESET;
-
-    usleep(3000); // Datasheet -> Delay = 1ms... BUT at least 3ms are needed _MH
-
-    // Write Configuration (0xC0 - 0xCE, 0xD0 - 0xD2, 0xDA - 0xDB)
-    int offset = 0;
-    int i, j = 0;
-
-    for (i = 0; i <= 19; i++)
-    {
-        if (i == 0)
-        {
-            offset = 0xC0;
-            j = 0;
-        }
-        if (i == 15)
-        {
-            offset = 0xD0;
-            j = 0;
-        }
-        if (i == 18)
-        {
-            offset = 0xDA;
-            j = 0;
-        }
-        Write_Dword(RC_RAA_WR, (offset + j), DUT.CR[i]);
-        j++;
-    }
-
-    // FW Handling Procedures
-    // Datasheet Appendix, section 15.7
-    // Phase 1: Wait time (dependent on start option)
-    // Phase 2: Preparation (common for all procedures)
-    // Phase 3: FW Update (different for procedures [A], [B], [C], [D] )
-    // Phase 4: FW Retention Check (common for all procedures)
-    printf("phase1!\n");
-    fflush(stdout);
-    // Phase1: Initial Wait Time
-    Write_Opcode(RC_MCT_ON);
-    DUT.State = AS6031_STATE_RESET;
-
-    sleep(3);
-
-    // Phase 2: Preparation
-    Write_Opcode(RC_BM_REQ);
-    Write_Dword(RC_RAA_WR, 0xC0, 0x48DBA399);
-    Read_Dword(RC_RAA_WR, 0xC0);
-    Write_Dword(RC_RAA_WR, 0xCD, 0x40100000);
-    Write_Dword(RC_RAA_WR, 0xC6, 0x00001000);
-    Write_Opcode(RC_SV_INIT);
-    Write_Opcode(RC_MCT_OFF);
-    sleep(1);
-    Write_Opcode2(RC_MT_REQ, 0x00);
-    sleep(1);
-    Write_Dword(RC_RAA_WR, 0xDD, 0x00000007);
-    Write_Opcode(RC_RF_CLR);
-    Write_Dword(RC_RAA_WR, 0xC4, 0x000AF000);
-    Write_Opcode(RC_BM_RLS);
-    Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
-    Write_Dword(RC_RAA_WR, 0xDE, 0x00100000);
-    printf("while 1!\n");
-    fflush(stdout);
-    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    {
-    };
-    Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
-    printf("while 2!\n");
-    fflush(stdout);
-    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    {
-    };
-
-    printf("phase 3!\n");
-    fflush(stdout);
-
-    // Phase 3: FW Update
-    Read_Dword(RC_RAA_RD, 0xEC);
-
-    // Write FWC
-    for (i = 32; i < FWC_Length; i++)
-    {
-        Write_Byte2(RC_FWC_WR, i, FWC[i]); // Writing FWC, bytewise with two byte address
-    }
-
-    // Write FWD
-    Write_Dword(RC_RAA_WR_NVRAM, 0x00, 0x0000AB6A); // Writing Firmware Code User, Checksum
-    Write_Dword(RC_RAA_WR_NVRAM, 0x01, 0x00000556); // Writing Firmware Data User, Checksum
-    Write_Dword(RC_RAA_WR_NVRAM, 0x02, 0x00010000); // Writing FWD_SIMPLE_SCALE (fd16)
-    Write_Dword(RC_RAA_WR_NVRAM, 0x03, 0x00000000); // Writing FWD_ZERO_OFFSET
-    Write_Dword(RC_RAA_WR_NVRAM, 0x04, 0x051EB852); // Writing FWD_MAX_TOF_DIFF
-    Write_Dword(RC_RAA_WR_NVRAM, 0x05, 0xFAE147AE); // Writing FWD_NEG_TOF_DIFF_LIMIT
-
-    Write_Dword(RC_RAA_WR_NVRAM, 0x5B, 0x0000000A); // Writing FWD_R_PULSE_PER_LITER
-    Write_Dword(RC_RAA_WR_NVRAM, 0x5C, 0x000003E8); // Writing FWD_R_PULSE_MAX_FLOW
-
-    Write_Dword(RC_RAA_WR_NVRAM, 0x67, 0x00000000); // Writing FWD_USM_RLS_DLY_INIT
-
-    Write_Dword(RC_RAA_WR_NVRAM, 0x6B, 0xABCD7654); // Writing Boot-Loader Release Code
-
-    Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
-    Write_Dword(RC_RAA_WR, 0xDE, 0x00010000);
-    printf("while 3!\n");
-    fflush(stdout);
-    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    {
-    };
-
-    // Phase 4: FW Retention Check
-    Write_Dword(RC_RAA_WR, 0xDF, 0x50F5B8CA);
-    Write_Dword(RC_RAA_WR, 0xDE, 0x00100000);
-    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    {
-    };
-    printf("while 4!\n");
-    fflush(stdout);
-    Write_Dword(RC_RAA_WR, 0xDE, 0x00080000);
-    while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 1, 1) == 0)
-    {
-    };
-    printf("while 5!\n");
-    fflush(stdout);
-    // Write_Dword(RC_RAA_WR, 0xD3, 0x0007F000);
-    // sleep(3); // After initialization checksum error flags, sleep of at least 34ms are needed _MH
-    // Write_Opcode(RC_FW_CHKSUM);
-    // printf("while 6 !\n");
-    // fflush(stdout);
-    // while (Read_Dword_Bits(RC_RAA_RD, 0xE0, 3, 3) == 0)
-    // {
-    // };
-    Read_Dword(RC_RAA_RD, 0xD3);
-
-    // END
-    //Write_Opcode(RC_SYS_RST);
-
-    configureISR();
-
     while (1)
     {
-        printf("main while\n");
-        fflush(stdout);
         /* USER CODE END WHILE */
-        sleep(1);
+
         /* USER CODE BEGIN 3 */
-        N_Measure_Cycles++;
 
-        // Wait for INTN
-        // NVIC Functionality to increase the speed of MCU
-        while (My_INTN_State == 1)
+        My_Loop_Pass_Counter += 1; // counts every loop
+
+        //	  printf("%02d:%02d:%02d\n", currTime.Hours, currTime.Minutes, currTime.Seconds);
+
+        if ((My_INTN_State == 0) && (My_Chip_initialized == 1))
         {
+            // *** debug - read the watchdog to make sure it is off
+            watchdog_value = Read_Dword(RC_RAA_RD_RAM, SRR_MSC_STF) & (1 << 15);
+
+            My_Time_Conversion_Mode();
+
+            /* Update Configuration */
+            if (My_New_FHL_mV > 0)
+            {
+                /* Update System Handling Register
+                 * SHR_FHL_U (First Hit Level Up) 0x0DA
+                 * SHR_FHL_D (First Hit Level Down) 0x0DB
+                 */
+                My_New_FHL = My_New_FHL_mV / 0.88;
+
+                Write_Dword(RC_RAA_WR_RAM, SHR_FHL_U, My_New_FHL);
+                Write_Dword(RC_RAA_WR_RAM, SHR_FHL_D, My_New_FHL);
+
+                My_Set_FHL_mV = My_New_FHL_mV;
+                My_New_FHL_mV = 0;
+            }
+        } // End of (My_INTN_State == true) query
+
+        /* Reload Configuration */
+        if (My_New_Configuration > 0)
+        {
+            My_Chip_initialized = 0;
+            My_Chip_config_1 = 0;
+            My_Chip_config_2 = 0;
+            My_Chip_config_3 = 0;
+
+            Put_UFC_Into_Idle();
+            My_Chip_idle_state = 1;
+
+            if (My_New_Configuration != 99)
+            {
+                // AS6031_ST_NS
+                // strcpy(My_Configuration, "AS6031_ST_NS");
+                My_Chip_config_2 = 1;
+                //				  My_Write_CFG_AS6031_1MHz_SpoolPiece;
+                My_Write_CFG_AS6031_2MHz_Moen_Molded_Round_Bottom();
+
+                My_Set_FHL_mV = Read_Dword(RC_RAA_RD_RAM, SHR_ZCD_FHL_U);
+                My_Set_FHL_mV *= 0.88;
+
+                Write_Opcode(RC_MCT_ON); // RC_MCT_ON
+                // Write_Opcode(RC_IF_CLR);
+                My_Chip_idle_state = 0;
+                My_Init_State();
+            }
         }
-        RAW_Result = Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
 
-        RAW_Result /= 65536; // divided by 2^16
-        Time_Result = RAW_Result * 250 * (1e-9);
+        // With any ERROR
+        // Initialisation of DUT will be cleared
+        if (Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG))
+        {
+            My_Chip_initialized = 0;
+            My_Init_State();
+        }
 
-        Time_Result_ns = TIME_ns(Time_Result); // result in [ns]
+    } // End of while loop
 
-        printf("Time_Result: %f\n", Time_Result);
-        printf("Time_Result_ns: %f\n", Time_Result_ns);
-        fflush(stdout);
-
-        My_INTN_State = 1;
-        Write_Opcode(RC_IF_CLR);
-    }
-    /* USER CODE END 3 */
-    return 0;
 }
