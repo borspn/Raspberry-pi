@@ -141,3 +141,34 @@ void Write_Opcode2(char byte1, char byte2)
     char spiTX[2] = {byte1, byte2};
     spiWrite(spi_handle, spiTX, 2);
 }
+
+void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword_array, int to_addr)
+{
+  /* Timeout duration in millisecond [ms] */
+  uint8_t spiTX[4];
+  uint32_t temp_u32 = 0;
+
+  spiTX[0] = opcode;
+  spiTX[1] = from_addr;
+
+//  /* to start at expected index */
+//  dword_array += from_addr; 
+  
+
+  /* 2.a Transmit register address */
+  spiWrite(spi_handle, spiTX, 2); 
+    
+  /* 2.b Transmit register address incrementally */
+  for (int i = from_addr; i <= to_addr; i++) {
+    temp_u32 = *dword_array;
+    spiTX[0] = temp_u32>>24;
+    spiTX[1] = temp_u32>>16;
+    spiTX[2] = temp_u32>>8;
+    spiTX[3] = temp_u32;
+
+    spiWrite(spi_handle, spiTX, 4); 
+
+    dword_array++;
+  }
+
+}

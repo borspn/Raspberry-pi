@@ -71,29 +71,7 @@ volatile uint8_t My_Chip_config_2 = 0;
 volatile uint8_t My_Chip_config_3 = 0;
 volatile uint8_t My_Chip_idle_state = 0;
 
-// Configuration: using plastic spool piece plastic Audiowell New-Design, V-Shape
-uint32_t Reg[20] = {
-    0x48DBA399, // [0xC0] CR_WD_DIS
-    0x00800401, // [0xC1] CR_IFC_CTRL
-    0x00000000, // [0xC2] CR_GP_CTRL
-    0x00000001, // [0xC3] CR_USM_OPT
-    0x0011F7FF, // [0xC4] CR_IEH
-    0x6046EF29, // [0xC5] CR_CPM
-    0x01012100, // [0xC6] CR_MRG_TS
-    0x00240000, // [0xC7] CR_TPM
-    0x006807E4, // [0xC8] CR_USM_PRC
-    0x60160204, // [0xC9] CR_USM_FRC
-    0x010FEA14, // [0xCA] CR_USM_TOF
-    0x23A4DE81, // [0xCB] CR_USM_AM
-    0x94A0C46C, // [0xCC] CR_TRIM1
-    0x401100C4, // [0xCD] CR_TRIM2
-    0x00A7400F, // [0xCE] CR_TRIM3
-    0x00000001, // [0xD0] SHR_TOF_RATE
-    0x000015E0, // [0xD1] SHR_USM_RLS_DLY_U
-    0x000015E0, // [0xD2] SHR_USM_RLS_DLY_D
-    0x0000004B, // [0xDA] SHR_ZCD_FHL_U
-    0x0000004B  // [0xDB] SHR_ZCD_FHL_D
-};
+
 
 // Firmware Code: <AS6031_AS6040_A1.F1.11.01_DIF_over_PI_sim.hex>
 uint8_t FWC[] = {
@@ -180,6 +158,53 @@ float Two_s_Complement_Conversion(uint32_t raw_number, int bit, float mult_facto
     number *= mult_factor;
 
     return number;
+}
+
+void writeConfig(void)
+{
+#undef HS_CLOCK
+#define HS_CLOCK 4e6
+// Configuration: using plastic spool piece plastic Audiowell New-Design, V-Shape
+uint32_t CFG_Registers[20] = {
+    0x48DBA399, // [0xC0] CR_WD_DIS
+    0x00800401, // [0xC1] CR_IFC_CTRL
+    0x00000000, // [0xC2] CR_GP_CTRL
+    0x00000001, // [0xC3] CR_USM_OPT
+    0x0011F7FF, // [0xC4] CR_IEH
+    0x6046EF29, // [0xC5] CR_CPM
+    0x01012100, // [0xC6] CR_MRG_TS
+    0x00240000, // [0xC7] CR_TPM
+    0x006807E4, // [0xC8] CR_USM_PRC
+    0x60160204, // [0xC9] CR_USM_FRC
+    0x010FEA14, // [0xCA] CR_USM_TOF
+    0x23A4DE81, // [0xCB] CR_USM_AM
+    0x94A0C46C, // [0xCC] CR_TRIM1
+    0x401100C4, // [0xCD] CR_TRIM2
+    0x00A7400F, // [0xCE] CR_TRIM3
+    0x00000001, // [0xD0] SHR_TOF_RATE
+    0x000015E0, // [0xD1] SHR_USM_RLS_DLY_U
+    0x000015E0, // [0xD2] SHR_USM_RLS_DLY_D
+    0x0000004B, // [0xDA] SHR_ZCD_FHL_U
+    0x0000004B  // [0xDB] SHR_ZCD_FHL_D
+};
+//TRIM2 adjusted, 0x401100C7 -> 0x401100C4
+  //Extracting needed data
+  TOF_HIT_NO = CFG_Registers[0xA];
+  TOF_HIT_NO &= TOF_HIT_NO_mask;
+  TOF_HIT_NO >>= 8;
+
+  //Configuration Register
+  Write_Register_Auto_Incr(RC_RAA_WR_RAM, 0xC0, CFG_Registers, 0xCF);
+
+  //System Handling Register
+  Write_Dword(RC_RAA_WR_RAM, SHR_TOF_RATE,          0x00000001);  //TOF RATE Lvl
+  Write_Dword(RC_RAA_WR_RAM, SHR_USM_RLS_DLY_U,     0x000015E0);  //Multi-hit Start Delay Up
+  Write_Dword(RC_RAA_WR_RAM, SHR_USM_RLS_DLY_D,     0x000015E0);  //Multi-hit Start Delay Down
+  Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_U,         0x0000004B);  //Zero Cross Detection First Hit Level Up
+//    Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_D,         0x00000087);  //Zero Cross Detection First Hit Level Down
+  Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_D,         0x0000004B);  //Zero Cross Detection First Hit Level Down
+
+  return;
 }
 
 float Calc_TimeOfFlight(uint32_t TOF_address)
@@ -459,8 +484,8 @@ int main()
                 // AS6031_ST_NS
                 // strcpy(My_Configuration, "AS6031_ST_NS");
                 My_Chip_config_2 = 1;
-                //				  My_Write_CFG_AS6031_1MHz_SpoolPiece;
-                My_Write_CFG_AS6031_2MHz_Moen_Molded_Round_Bottom();
+
+                writeConfig();
 
                 My_Set_FHL_mV = Read_Dword(RC_RAA_RD_RAM, SHR_ZCD_FHL_U);
                 My_Set_FHL_mV *= 0.88;

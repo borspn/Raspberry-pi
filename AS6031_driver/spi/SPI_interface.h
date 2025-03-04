@@ -26,3 +26,5 @@ uint32_t Read_Dword(char rd_opcode, uint8_t address);
 uint32_t Read_Dword_Bits(char rd_opcode, uint8_t address, uint8_t msbit, uint8_t lsbit);
 // Writes two bytes as an opcode
 void Write_Opcode2(char byte1, char byte2);
+
+void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword_array, int to_addr);
