@@ -475,6 +475,8 @@ int main()
             // *** debug - read the watchdog to make sure it is off
             watchdog_value = Read_Dword(RC_RAA_RD_RAM, SRR_MSC_STF) & (1 << 15);
 
+            SRR_TS_TIME_content = Read_Dword(RC_RAA_RD_RAM, SRR_TS_TIME);
+
             My_Time_Conversion_Mode();
 
             /* Update Configuration */
