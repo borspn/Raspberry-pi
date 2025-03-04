@@ -17,7 +17,7 @@
 volatile uint8_t My_INTN_State = 1; /* low active */
 // For Debugging
 volatile uint8_t My_Chip_initialized = 0;
-volatile uint8_t  My_Chip_idle_state = 0;
+volatile uint8_t My_Chip_idle_state = 0;
 // *** debug - for watchdog reading
 volatile uint32_t watchdog_value = 0;
 
@@ -31,9 +31,8 @@ volatile uint32_t My_UP_zero = 0;
 volatile uint32_t My_DOWN_zero = 0;
 
 volatile uint32_t My_Min_Value_A = 0xFFFFFFFF, My_Max_Value_A = 0,
-         My_Min_Value_B = 0xFFFFFFFF, My_Max_Value_B = 0;
+                  My_Min_Value_B = 0xFFFFFFFF, My_Max_Value_B = 0;
 volatile uint32_t My_Too_Less_Time = 0;
-
 
 volatile uint8_t My_New_Configuration = 1; // 1 = TDC-GP30 or AS6031 dependent on definition
 volatile uint8_t My_New_FHL = 0;
@@ -65,6 +64,12 @@ float MyTOFSumAvgUP_ns;
 float MyTOFSumAvgDOWN_ns;
 float MyDiffTOFSumAvg_ps;
 
+// For Debugging
+volatile uint8_t My_Chip_initialized = 0;
+volatile uint8_t My_Chip_config_1 = 0;
+volatile uint8_t My_Chip_config_2 = 0;
+volatile uint8_t My_Chip_config_3 = 0;
+volatile uint8_t My_Chip_idle_state = 0;
 
 // Configuration: using plastic spool piece plastic Audiowell New-Design, V-Shape
 uint32_t Reg[20] = {
@@ -114,6 +119,75 @@ uint8_t FWC[] = {
 
 int FWC_Length = sizeof(FWC);
 
+* @brief  This function takes about ~88�s, using POW() two times! Means,
+*             each function call of POW() takes approx. 40�s AND header 
+*             file is needed! 
+*                     #include <tgmath.h>
+*                     [..]
+*                     exp = POW(2, bit);
+*                     half_exp = POW(2, bit-1);
+*
+*             ON THE OTHER HAND, using if-clauses, THIS function takes ~2�s
+*                     [..]
+*                     if (bit==16) exp = 65536;
+*                     half_exp = exp / 2;
+*
+*             Definition Two's Complement: Negative numbers in binary
+*                     Given a set of all possible N-bit values, we can assign
+*                     the lower (by the binary value) half to be the integers 
+*                     from 0 to (2^N-1 - 1) inclusive and the upper half to 
+*                     be (-2N-1) to -1 inclusive
+*
+*             Example:
+*                     // divided by 2^16 (fpp), multipled by 250ns (e.g. T_ref)
+*                     FLOAT_Value = Two_s_Complement_Conversion(HEX_value, 16, 250E-9); 
+*
+* @param  raw_number (uint32_t) 
+* @param  bit (int) 
+* @param  mult_factor (float) 
+* @retval Two's Complement (float)
+*/
+float Two_s_Complement_Conversion(uint32_t raw_number, int bit, float mult_factor)
+{
+float number;
+double exp, half_exp;
+
+/* determine the 'power of 2' */
+if (bit==32) exp = 4294967296;  /* = 2^32 */
+if (bit==24) exp = 16777216;    /* = 2^24 */
+if (bit==16) exp = 65536;       /* = 2^16 */
+if (bit==8)  exp = 256;         /* = 2^8 */
+
+half_exp = exp / 2;
+
+number = raw_number / exp;
+
+if (number <= (half_exp - 1)) {
+  /*positive number, nothing to do */
+} else { /**/
+  /*to get negative number */
+  number -= exp;
+}
+
+/*to get the correct result by multiplication factor */
+number *= mult_factor;
+
+return number;
+}
+
+float Calc_TimeOfFlight(uint32_t TOF_address)
+{
+	/* local parameter */
+	uint32_t RAWValue = 0;
+	float FLOATValue = 0;
+
+	RAWValue = Read_Dword(RC_RAA_RD_RAM, TOF_address);
+	/* Calculation of Time of Flight */
+	FLOATValue = Two_s_Complement_Conversion(RAWValue, 16, T_REF);
+
+	return FLOATValue;
+}
+
 void gpio_callback(int gpio, int level, uint32_t tick)
 {
     printf("Interrupt detected on GPIO %d! Level: %d, Timestamp: %u\n", gpio, level, tick);
@@ -122,25 +196,42 @@ void gpio_callback(int gpio, int level, uint32_t tick)
 
 void My_Init_State(void)
 {
-	/* reset counter */
-	My_INTN_Counter = 0;
-	My_Cycle_A_Counter = 0;
-	My_Cycle_B_Counter = 0;
-	My_Loop_Pass_Counter = 0;
-	My_ERROR_Counter = 0;
-	My_UP_zero = 0;
-	My_DOWN_zero = 0;
-	My_Too_Less_Time = 0;
+    /* reset counter */
+    My_INTN_Counter = 0;
+    My_Cycle_A_Counter = 0;
+    My_Cycle_B_Counter = 0;
+    My_Loop_Pass_Counter = 0;
+    My_ERROR_Counter = 0;
+    My_UP_zero = 0;
+    My_DOWN_zero = 0;
+    My_Too_Less_Time = 0;
 
-	/* expand range */
-	My_Min_Value_A = 0xFFFFFFFF;
-	My_Max_Value_A = 0;
-	My_Min_Value_B = 0xFFFFFFFF;
-	My_Max_Value_B = 0;
+    /* expand range */
+    My_Min_Value_A = 0xFFFFFFFF;
+    My_Max_Value_A = 0;
+    My_Min_Value_B = 0xFFFFFFFF;
+    My_Max_Value_B = 0;
 
-	My_New_Configuration = 0;
+    My_New_Configuration = 0;
 
-	My_Chip_initialized = 1;
+    My_Chip_initialized = 1;
+}
+
+float Calc_Amplitude(uint32_t AM_address, uint32_t AMC_VH, uint32_t AMC_VL)
+{
+	/* local parameter */
+	uint32_t RAWValue = 0;
+	float AMC_gradient = 0;
+	float AMC_offset = 0;
+	float FLOATValue = 0;
+
+	RAWValue = Read_Dword(RC_RAA_RD_RAM, AM_address);
+	AMC_gradient = 350 / (float)(AMC_VH - AMC_VL);
+	AMC_offset = ((2 * AMC_VL) - AMC_VH) * AMC_gradient;
+
+	FLOATValue = (AMC_gradient * RAWValue) - AMC_offset;
+
+	return FLOATValue;
 }
 
 
@@ -384,5 +475,4 @@ int main()
         }
 
     } // End of while loop
-
 }
