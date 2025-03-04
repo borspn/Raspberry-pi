@@ -10,10 +10,10 @@
 #include "SPI_interface.h"
 #include "user_GP30_parameter.h"
 #include "user_UFC_cmd.h"
+#include "user_AS6031_parameter.h"
 
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
-#define SHR_ZCD_FHL_U ((uint8_t)0xDA) // Zero Cross Detection, First Hit Level Up
 
 // volatile bool My_INTN_State = false;
 volatile uint8_t My_INTN_State = 1; /* low active */
