@@ -59,6 +59,12 @@ float MyRealPWUP;
 float MyRealPWDOWN;
 float MyRealHSClk;
 
+// Scaling
+float MyRealHSClk_ns;
+float MyTOFSumAvgUP_ns;
+float MyTOFSumAvgDOWN_ns;
+float MyDiffTOFSumAvg_ps;
+
 
 // Configuration: using plastic spool piece plastic Audiowell New-Design, V-Shape
 uint32_t Reg[20] = {
