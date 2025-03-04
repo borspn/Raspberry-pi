@@ -13,12 +13,11 @@
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
 
-/* USER CODE BEGIN PV */
-volatile uint32_t My_Loop_Pass_Counter = 0;
 // volatile bool My_INTN_State = false;
 volatile uint8_t My_INTN_State = 1; /* low active */
 // For Debugging
 volatile uint8_t My_Chip_initialized = 0;
+volatile uint8_t  My_Chip_idle_state = 0;
 // *** debug - for watchdog reading
 volatile uint32_t watchdog_value = 0;
 
@@ -42,6 +41,14 @@ volatile float My_New_FHL_mV = 0;
 volatile float My_Set_FHL_mV = 0;
 
 volatile uint8_t MyMode = 1; /* default */
+
+// Post Processing - Time Conversion Mode (MyMode = 1)
+uint32_t MyRAWValueUP;
+uint32_t MyRAWValueDOWN;
+uint32_t MyRAWAMCVH;
+uint32_t MyRAWAMCVL;
+uint32_t MyRAWPWUP;
+uint32_t MyRAWPWDOWN;
 
 // Configuration: using plastic spool piece plastic Audiowell New-Design, V-Shape
 uint32_t Reg[20] = {
@@ -136,7 +143,7 @@ bool configureISR()
 void Put_UFC_Into_Idle(void)
 {
     Write_Opcode(RC_SYS_RST);                           // Reset UFC completely
-    HAL_Delay(10);                                      // delay = 20ms?? only firmware data has no configuration data
+    usleep(10000);                                      // delay = 20ms?? only firmware data has no configuration data
     Write_Dword(RC_RAA_WR_RAM, CR_WD_DIS, WD_DIS_CODE); // STEP 1 - Disable Watchdog by writing code to CR_WD_DIS
     Write_Opcode(RC_MCT_OFF);
 }
