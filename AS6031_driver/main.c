@@ -476,6 +476,8 @@ int main()
             watchdog_value = Read_Dword(RC_RAA_RD_RAM, SRR_MSC_STF) & (1 << 15);
 
             SRR_TS_TIME_content = Read_Dword(RC_RAA_RD_RAM, SRR_TS_TIME);
+            printf("SRR_TS_TIME_content%d\n", SRR_TS_TIME_content);
+            fflush(stdout);
 
             My_Time_Conversion_Mode();
 
