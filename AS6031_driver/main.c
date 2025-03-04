@@ -13,6 +13,7 @@
 
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
+#define SHR_ZCD_FHL_U ((uint8_t)0xDA) // Zero Cross Detection, First Hit Level Up
 
 // volatile bool My_INTN_State = false;
 volatile uint8_t My_INTN_State = 1; /* low active */
@@ -119,72 +120,79 @@ uint8_t FWC[] = {
 int FWC_Length = sizeof(FWC);
 
 /* @brief  This function takes about ~88�s, using POW() two times! Means,
-*             each function call of POW() takes approx. 40�s AND header 
-*             file is needed! 
-*                     #include <tgmath.h>
-*                     [..]
-*                     exp = POW(2, bit);
-*                     half_exp = POW(2, bit-1);
-*
-*             ON THE OTHER HAND, using if-clauses, THIS function takes ~2�s
-*                     [..]
-*                     if (bit==16) exp = 65536;
-*                     half_exp = exp / 2;
-*
-*             Definition Two's Complement: Negative numbers in binary
-*                     Given a set of all possible N-bit values, we can assign
-*                     the lower (by the binary value) half to be the integers 
-*                     from 0 to (2^N-1 - 1) inclusive and the upper half to 
-*                     be (-2N-1) to -1 inclusive
-*
-*             Example:
-*                     // divided by 2^16 (fpp), multipled by 250ns (e.g. T_ref)
-*                     FLOAT_Value = Two_s_Complement_Conversion(HEX_value, 16, 250E-9); 
-*
-* @param  raw_number (uint32_t) 
-* @param  bit (int) 
-* @param  mult_factor (float) 
-* @retval Two's Complement (float)
-*/
+ *             each function call of POW() takes approx. 40�s AND header
+ *             file is needed!
+ *                     #include <tgmath.h>
+ *                     [..]
+ *                     exp = POW(2, bit);
+ *                     half_exp = POW(2, bit-1);
+ *
+ *             ON THE OTHER HAND, using if-clauses, THIS function takes ~2�s
+ *                     [..]
+ *                     if (bit==16) exp = 65536;
+ *                     half_exp = exp / 2;
+ *
+ *             Definition Two's Complement: Negative numbers in binary
+ *                     Given a set of all possible N-bit values, we can assign
+ *                     the lower (by the binary value) half to be the integers
+ *                     from 0 to (2^N-1 - 1) inclusive and the upper half to
+ *                     be (-2N-1) to -1 inclusive
+ *
+ *             Example:
+ *                     // divided by 2^16 (fpp), multipled by 250ns (e.g. T_ref)
+ *                     FLOAT_Value = Two_s_Complement_Conversion(HEX_value, 16, 250E-9);
+ *
+ * @param  raw_number (uint32_t)
+ * @param  bit (int)
+ * @param  mult_factor (float)
+ * @retval Two's Complement (float)
+ */
 float Two_s_Complement_Conversion(uint32_t raw_number, int bit, float mult_factor)
 {
-float number;
-double exp, half_exp;
+    float number;
+    double exp, half_exp;
 
-/* determine the 'power of 2' */
-if (bit==32) exp = 4294967296;  /* = 2^32 */
-if (bit==24) exp = 16777216;    /* = 2^24 */
-if (bit==16) exp = 65536;       /* = 2^16 */
-if (bit==8)  exp = 256;         /* = 2^8 */
+    /* determine the 'power of 2' */
+    if (bit == 32)
+        exp = 4294967296; /* = 2^32 */
+    if (bit == 24)
+        exp = 16777216; /* = 2^24 */
+    if (bit == 16)
+        exp = 65536; /* = 2^16 */
+    if (bit == 8)
+        exp = 256; /* = 2^8 */
 
-half_exp = exp / 2;
+    half_exp = exp / 2;
 
-number = raw_number / exp;
+    number = raw_number / exp;
 
-if (number <= (half_exp - 1)) {
-  /*positive number, nothing to do */
-} else { /**/
-  /*to get negative number */
-  number -= exp;
-}
+    if (number <= (half_exp - 1))
+    {
+        /*positive number, nothing to do */
+    }
+    else
+    { /**/
+        /*to get negative number */
+        number -= exp;
+    }
 
-/*to get the correct result by multiplication factor */
-number *= mult_factor;
+    /*to get the correct result by multiplication factor */
+    number *= mult_factor;
 
-return number;
+    return number;
 }
 
 float Calc_TimeOfFlight(uint32_t TOF_address)
 {
-	/* local parameter */
-	uint32_t RAWValue = 0;
-	float FLOATValue = 0;
+    /* local parameter */
+    uint32_t RAWValue = 0;
+    float FLOATValue = 0;
 
-	RAWValue = Read_Dword(RC_RAA_RD_RAM, TOF_address);
-	/* Calculation of Time of Flight */
-	FLOATValue = Two_s_Complement_Conversion(RAWValue, 16, T_REF);
+    RAWValue = Read_Dword(RC_RAA_RD_RAM, TOF_address);
+    /* Calculation of Time of Flight */
+    FLOATValue = Two_s_Complement_Conversion(RAWValue, 16, T_REF);
 
-	return FLOATValue;
+    return FLOATValue;
 }
 
 void gpio_callback(int gpio, int level, uint32_t tick)
@@ -218,21 +226,20 @@ void My_Init_State(void)
 
 float Calc_Amplitude(uint32_t AM_address, uint32_t AMC_VH, uint32_t AMC_VL)
 {
-	/* local parameter */
-	uint32_t RAWValue = 0;
-	float AMC_gradient = 0;
-	float AMC_offset = 0;
-	float FLOATValue = 0;
+    /* local parameter */
+    uint32_t RAWValue = 0;
+    float AMC_gradient = 0;
+    float AMC_offset = 0;
+    float FLOATValue = 0;
 
-	RAWValue = Read_Dword(RC_RAA_RD_RAM, AM_address);
-	AMC_gradient = 350 / (float)(AMC_VH - AMC_VL);
-	AMC_offset = ((2 * AMC_VL) - AMC_VH) * AMC_gradient;
+    RAWValue = Read_Dword(RC_RAA_RD_RAM, AM_address);
+    AMC_gradient = 350 / (float)(AMC_VH - AMC_VL);
+    AMC_offset = ((2 * AMC_VL) - AMC_VH) * AMC_gradient;
 
-	FLOATValue = (AMC_gradient * RAWValue) - AMC_offset;
+    FLOATValue = (AMC_gradient * RAWValue) - AMC_offset;
 
-	return FLOATValue;
+    return FLOATValue;
 }
-
 
 bool configureISR()
 {
