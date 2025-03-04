@@ -298,6 +298,8 @@ void My_Time_Conversion_Mode(void)
     /* STEP 3 - Read SRR_FEP_STF to check which
      * measurement has been updated in last measure cycle */
     SRR_FEP_STF_content = Read_Dword(RC_RAA_RD_RAM, SRR_FEP_STF);
+    printf("SRR_ERR_FLAG_content%d SRR_FEP_STF_content%d\n", SRR_ERR_FLAG_content, SRR_FEP_STF_content);
+    fflush(stdout);
 
     if (SRR_ERR_FLAG_content > 0)
     {
