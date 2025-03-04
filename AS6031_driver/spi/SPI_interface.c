@@ -109,7 +109,7 @@ uint32_t Read_Dword(char rd_opcode, uint8_t address)
 
     spiWrite(spi_handle, spiTX, 2); // Send opcode/address, receive data
     spiRead(spi_handle, spiRX, 4);
-    uint32_t temp_u32 = (spiRX[0] << 24) + (spiRX[1] << 16) + (spiRX[2] << 8) + (spiRX[3]);
+    temp_u32 = (spiRX[0] << 24) + (spiRX[1] << 16) + (spiRX[2] << 8) + (spiRX[3]);
 
     return temp_u32;
 }
