@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include "SPI_interface.h"
 #include "user_GP30_parameter.h"
+#include " user_as6031_cmd.h"
 
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
