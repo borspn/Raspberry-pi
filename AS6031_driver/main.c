@@ -22,6 +22,27 @@ volatile uint8_t My_Chip_initialized = 0;
 // *** debug - for watchdog reading
 volatile uint32_t watchdog_value = 0;
 
+volatile uint32_t My_INTN_Counter = 0;
+volatile uint32_t My_Cycle_A_Counter = 0;
+volatile uint32_t My_Cycle_B_Counter = 0;
+volatile uint32_t My_Loop_Pass_Counter = 0;
+
+volatile uint32_t My_ERROR_Counter = 0;
+volatile uint32_t My_UP_zero = 0;
+volatile uint32_t My_DOWN_zero = 0;
+
+volatile uint32_t My_Min_Value_A = 0xFFFFFFFF, My_Max_Value_A = 0,
+         My_Min_Value_B = 0xFFFFFFFF, My_Max_Value_B = 0;
+volatile uint32_t My_Too_Less_Time = 0;
+
+
+volatile uint8_t My_New_Configuration = 1; // 1 = TDC-GP30 or AS6031 dependent on definition
+volatile uint8_t My_New_FHL = 0;
+volatile float My_New_FHL_mV = 0;
+volatile float My_Set_FHL_mV = 0;
+
+volatile uint8_t MyMode = 1; /* default */
+
 // Configuration: using plastic spool piece plastic Audiowell New-Design, V-Shape
 uint32_t Reg[20] = {
     0x48DBA399, // [0xC0] CR_WD_DIS
