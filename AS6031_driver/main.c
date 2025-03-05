@@ -457,6 +457,7 @@ int main()
 
     spi_init();
     configureISR();
+    writeConfig();
     uint32_t tmp = Read_Dword(RC_RAA_RD_RAM, 0xC6);
     printf("tmp%d\n", tmp); 
     fflush(stdout); 
