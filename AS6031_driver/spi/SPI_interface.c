@@ -90,20 +90,6 @@ void Write_Byte2(char opcode, uint16_t address, uint8_t byte)
     PUT_SSN_HIGH;
 }
 
-/**
- * @brief Read a double word (4 bytes) via SPI.
- */
-// uint32_t Read_Dword(char rd_opcode, uint8_t address)
-// {
-//     char spiTX[2] = {rd_opcode, address};
-//     char spiRX[6] = {0};
-
-//     spiXfer(spi_handle, spiTX, spiRX, 6); // Send opcode/address, receive data
-
-//     uint32_t temp_u32 = (spiRX[2] << 24) | (spiRX[3] << 16) | (spiRX[4] << 8) | spiRX[5];
-
-//     return temp_u32;
-// }
 uint32_t Read_Dword(char rd_opcode, uint8_t address)
 {
     uint8_t spiTX[2];
