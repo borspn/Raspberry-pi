@@ -46,7 +46,9 @@ void spi_close()
  */
 void Write_Opcode(char one_byte)
 {
+    PUT_SSN_LOW;
     spiWrite(spi_handle, &one_byte, 1); // Send opcode
+    PUT_SSN_HIGH;
 }
 
 /**
@@ -65,8 +67,10 @@ void Write_Dword(char opcode, uint8_t address, uint32_t dword)
     spiTX[4] = temp_u32 >> 8;
     spiTX[5] = temp_u32;
 
+    PUT_SSN_LOW;
     /* 2. Transmit register address */
     spiWrite(spi_handle, spiTX, 6);
+    PUT_SSN_HIGH;
 }
 
 /**
@@ -81,7 +85,9 @@ void Write_Byte2(char opcode, uint16_t address, uint8_t byte)
     spiTX[2] = address & 0xFF;
     spiTX[3] = byte;
 
+    PUT_SSN_LOW;
     spiWrite(spi_handle, spiTX, 4);
+    PUT_SSN_HIGH;
 }
 
 /**
@@ -106,9 +112,10 @@ uint32_t Read_Dword(char rd_opcode, uint8_t address)
 
     spiTX[0] = rd_opcode;
     spiTX[1] = address;
-
+    PUT_SSN_LOW;
     spiWrite(spi_handle, spiTX, 2); // Send opcode/address, receive data
     spiRead(spi_handle, spiRX, 4);
+    PUT_SSN_HIGH;
     temp_u32 = (spiRX[0] << 24) + (spiRX[1] << 16) + (spiRX[2] << 8) + (spiRX[3]);
 
     return temp_u32;
@@ -139,7 +146,9 @@ uint32_t Read_Dword_Bits(char rd_opcode, uint8_t address, uint8_t msbit, uint8_t
 void Write_Opcode2(char byte1, char byte2)
 {
     char spiTX[2] = {byte1, byte2};
+    PUT_SSN_LOW;
     spiWrite(spi_handle, spiTX, 2);
+    PUT_SSN_HIGH;
 }
 
 void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword_array, int to_addr)
@@ -155,10 +164,12 @@ void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword
 //  dword_array += from_addr; 
   
 
+  PUT_SSN_LOW;
   /* 2.a Transmit register address */
   spiWrite(spi_handle, spiTX, 2); 
-    
+  PUT_SSN_HIGH  
   /* 2.b Transmit register address incrementally */
+  PUT_SSN_LOW;
   for (int i = from_addr; i <= to_addr; i++) {
     temp_u32 = *dword_array;
     spiTX[0] = temp_u32>>24;
@@ -170,5 +181,6 @@ void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword
 
     dword_array++;
   }
+    PUT_SSN_HIGH;
 
 }
