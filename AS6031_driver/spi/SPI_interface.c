@@ -153,34 +153,33 @@ void Write_Opcode2(char byte1, char byte2)
 
 void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword_array, int to_addr)
 {
-  /* Timeout duration in millisecond [ms] */
-  uint8_t spiTX[4];
-  uint32_t temp_u32 = 0;
+    /* Timeout duration in millisecond [ms] */
+    uint8_t opcodeAndAddress[2];
+    uint8_t spiTX[4];
+    uint32_t temp_u32 = 0;
 
-  spiTX[0] = opcode;
-  spiTX[1] = from_addr;
+    opcodeAndAddress[0] = opcode;
+    opcodeAndAddress[1] = from_addr;
 
-//  /* to start at expected index */
-//  dword_array += from_addr; 
-  
+    //  /* to start at expected index */
+    //  dword_array += from_addr;
 
-  PUT_SSN_LOW;
-  /* 2.a Transmit register address */
-  spiWrite(spi_handle, spiTX, 2); 
-  PUT_SSN_HIGH;
-  /* 2.b Transmit register address incrementally */
-  PUT_SSN_LOW;
-  for (int i = from_addr; i <= to_addr; i++) {
-    temp_u32 = *dword_array;
-    spiTX[0] = temp_u32>>24;
-    spiTX[1] = temp_u32>>16;
-    spiTX[2] = temp_u32>>8;
-    spiTX[3] = temp_u32;
+    /* 2.b Transmit register address incrementally */
 
-    spiWrite(spi_handle, spiTX, 4); 
+    for (int i = from_addr; i <= to_addr; i++)
+    {
+        PUT_SSN_LOW;
+        spiWrite(spi_handle, spiTX, 2);
+        opcodeAndAddress[1] += 0x1;
+        temp_u32 = *dword_array;
+        spiTX[0] = temp_u32 >> 24;
+        spiTX[1] = temp_u32 >> 16;
+        spiTX[2] = temp_u32 >> 8;
+        spiTX[3] = temp_u32;
 
-    dword_array++;
-  }
-    PUT_SSN_HIGH;
+        spiWrite(spi_handle, spiTX, 4);
 
+        dword_array++;
+        PUT_SSN_HIGH;
+    }
 }
