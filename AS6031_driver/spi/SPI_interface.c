@@ -169,7 +169,7 @@ void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword
     for (int i = from_addr; i <= to_addr; i++)
     {
         PUT_SSN_LOW;
-        spiWrite(spi_handle, spiTX, 2);
+        spiWrite(spi_handle, opcodeAndAddress, 2);
         opcodeAndAddress[1] += 0x1;
         temp_u32 = *dword_array;
         spiTX[0] = temp_u32 >> 24;
