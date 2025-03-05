@@ -457,93 +457,97 @@ int main()
 
     spi_init();
     configureISR();
-    while (1)
-    {
-        printf("while main!\n");
-        fflush(stdout);
-        sleep(1);
-        /* USER CODE END WHILE */
+    uint32_t tmp = Read_Dword(RC_RAA_RD_RAM, 0xC6);
+    printf("tmp%d\n", tmp); 
+    fflush(stdout); 
 
-        /* USER CODE BEGIN 3 */
+    // while (1)
+    // {
+    //     printf("while main!\n");
+    //     fflush(stdout);
+    //     sleep(1);
+    //     /* USER CODE END WHILE */
 
-        My_Loop_Pass_Counter += 1; // counts every loop
+    //     /* USER CODE BEGIN 3 */
 
-        //	  printf("%02d:%02d:%02d\n", currTime.Hours, currTime.Minutes, currTime.Seconds);
+    //     My_Loop_Pass_Counter += 1; // counts every loop
 
-        if ((My_INTN_State == 0) && (My_Chip_initialized == 1))
-        {
-            printf("(My_INTN_State == 0) && (My_Chip_initialized == 1)\n");
-            fflush(stdout);
-            // *** debug - read the watchdog to make sure it is off
-            watchdog_value = Read_Dword(RC_RAA_RD_RAM, SRR_MSC_STF) & (1 << 15);
+    //     //	  printf("%02d:%02d:%02d\n", currTime.Hours, currTime.Minutes, currTime.Seconds);
 
-            SRR_TS_TIME_content = 3;
-            printf("SRR_TS_TIME_content%d\n", SRR_TS_TIME_content);
-            fflush(stdout);
+    //     if ((My_INTN_State == 0) && (My_Chip_initialized == 1))
+    //     {
+    //         printf("(My_INTN_State == 0) && (My_Chip_initialized == 1)\n");
+    //         fflush(stdout);
+    //         // *** debug - read the watchdog to make sure it is off
+    //         watchdog_value = Read_Dword(RC_RAA_RD_RAM, SRR_MSC_STF) & (1 << 15);
 
-            My_Time_Conversion_Mode();
+    //         SRR_TS_TIME_content = 3;
+    //         printf("SRR_TS_TIME_content%d\n", SRR_TS_TIME_content);
+    //         fflush(stdout);
 
-            /* Update Configuration */
-            if (My_New_FHL_mV > 0)
-            {
-                printf("My_New_FHL_mV > 0\n");
-                fflush(stdout);
-                /* Update System Handling Register
-                 * SHR_FHL_U (First Hit Level Up) 0x0DA
-                 * SHR_FHL_D (First Hit Level Down) 0x0DB
-                 */
-                My_New_FHL = My_New_FHL_mV / 0.88;
+    //         My_Time_Conversion_Mode();
 
-                Write_Dword(RC_RAA_WR_RAM, SHR_FHL_U, My_New_FHL);
-                Write_Dword(RC_RAA_WR_RAM, SHR_FHL_D, My_New_FHL);
+    //         /* Update Configuration */
+    //         if (My_New_FHL_mV > 0)
+    //         {
+    //             printf("My_New_FHL_mV > 0\n");
+    //             fflush(stdout);
+    //             /* Update System Handling Register
+    //              * SHR_FHL_U (First Hit Level Up) 0x0DA
+    //              * SHR_FHL_D (First Hit Level Down) 0x0DB
+    //              */
+    //             My_New_FHL = My_New_FHL_mV / 0.88;
 
-                My_Set_FHL_mV = My_New_FHL_mV;
-                My_New_FHL_mV = 0;
-            }
-        } // End of (My_INTN_State == true) query
+    //             Write_Dword(RC_RAA_WR_RAM, SHR_FHL_U, My_New_FHL);
+    //             Write_Dword(RC_RAA_WR_RAM, SHR_FHL_D, My_New_FHL);
 
-        /* Reload Configuration */
-        if (My_New_Configuration > 0)
-        {
-            printf("My_New_Configuration > 0\n");
-            fflush(stdout);
-            My_Chip_initialized = 0;
-            My_Chip_config_1 = 0;
-            My_Chip_config_2 = 0;
-            My_Chip_config_3 = 0;
+    //             My_Set_FHL_mV = My_New_FHL_mV;
+    //             My_New_FHL_mV = 0;
+    //         }
+    //     } // End of (My_INTN_State == true) query
 
-            Put_UFC_Into_Idle();
-            My_Chip_idle_state = 1;
+    //     /* Reload Configuration */
+    //     if (My_New_Configuration > 0)
+    //     {
+    //         printf("My_New_Configuration > 0\n");
+    //         fflush(stdout);
+    //         My_Chip_initialized = 0;
+    //         My_Chip_config_1 = 0;
+    //         My_Chip_config_2 = 0;
+    //         My_Chip_config_3 = 0;
 
-            if (My_New_Configuration != 99)
-            {
-                printf("My_New_Configuration != 99\n");
-                fflush(stdout);
-                // AS6031_ST_NS
-                // strcpy(My_Configuration, "AS6031_ST_NS");
-                My_Chip_config_2 = 1;
+    //         Put_UFC_Into_Idle();
+    //         My_Chip_idle_state = 1;
 
-                writeConfig();
+    //         if (My_New_Configuration != 99)
+    //         {
+    //             printf("My_New_Configuration != 99\n");
+    //             fflush(stdout);
+    //             // AS6031_ST_NS
+    //             // strcpy(My_Configuration, "AS6031_ST_NS");
+    //             My_Chip_config_2 = 1;
 
-                My_Set_FHL_mV = Read_Dword(RC_RAA_RD_RAM, SHR_ZCD_FHL_U);
-                My_Set_FHL_mV *= 0.88;
+    //             writeConfig();
 
-                Write_Opcode(RC_MCT_ON); // RC_MCT_ON
-                // Write_Opcode(RC_IF_CLR);
-                My_Chip_idle_state = 0;
-                My_Init_State();
-            }
-        }
+    //             My_Set_FHL_mV = Read_Dword(RC_RAA_RD_RAM, SHR_ZCD_FHL_U);
+    //             My_Set_FHL_mV *= 0.88;
 
-        // With any ERROR
-        // Initialisation of DUT will be cleared
-        if (Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG))
-        {
-            printf("Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG)\n");
-            fflush(stdout);
-            My_Chip_initialized = 0;
-            My_Init_State();
-        }
+    //             Write_Opcode(RC_MCT_ON); // RC_MCT_ON
+    //             // Write_Opcode(RC_IF_CLR);
+    //             My_Chip_idle_state = 0;
+    //             My_Init_State();
+    //         }
+    //     }
 
-    } // End of while loop
+    //     // With any ERROR
+    //     // Initialisation of DUT will be cleared
+    //     if (Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG))
+    //     {
+    //         printf("Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG)\n");
+    //         fflush(stdout);
+    //         My_Chip_initialized = 0;
+    //         My_Init_State();
+    //     }
+
+    // } // End of while loop
 }
