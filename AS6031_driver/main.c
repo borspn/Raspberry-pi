@@ -170,7 +170,7 @@ void writeConfig(void)
         0x00000001, // [0xC3] CR_USM_OPT
         0x0011F7FF, // [0xC4] CR_IEH
         0x6046EF29, // [0xC5] CR_CPM
-        0x00210101,//0x01012100, // [0xC6] CR_MRG_TS
+        0x01012100, // [0xC6] CR_MRG_TS
         0x00240000, // [0xC7] CR_TPM
         0x006807E4, // [0xC8] CR_USM_PRC
         0x60160204, // [0xC9] CR_USM_FRC
@@ -457,98 +457,94 @@ int main()
 
     spi_init();
     configureISR();
-    writeConfig();
-    uint32_t tmp = Read_Dword(RC_RAA_RD_RAM, 0xC6);
-    printf("tmp%d\n", tmp); 
-    fflush(stdout); 
 
-    // while (1)
-    // {
-    //     printf("while main!\n");
-    //     fflush(stdout);
-    //     sleep(1);
-    //     /* USER CODE END WHILE */
+    while (1)
+    {
+        printf("while main!\n");
+        fflush(stdout);
+        sleep(1);
+        /* USER CODE END WHILE */
 
-    //     /* USER CODE BEGIN 3 */
+        /* USER CODE BEGIN 3 */
 
-    //     My_Loop_Pass_Counter += 1; // counts every loop
+        My_Loop_Pass_Counter += 1; // counts every loop
 
-    //     //	  printf("%02d:%02d:%02d\n", currTime.Hours, currTime.Minutes, currTime.Seconds);
+        //	  printf("%02d:%02d:%02d\n", currTime.Hours, currTime.Minutes, currTime.Seconds);
 
-    //     if ((My_INTN_State == 0) && (My_Chip_initialized == 1))
-    //     {
-    //         printf("(My_INTN_State == 0) && (My_Chip_initialized == 1)\n");
-    //         fflush(stdout);
-    //         // *** debug - read the watchdog to make sure it is off
-    //         watchdog_value = Read_Dword(RC_RAA_RD_RAM, SRR_MSC_STF) & (1 << 15);
+        if ((My_INTN_State == 0) && (My_Chip_initialized == 1))
+        {
+            printf("(My_INTN_State == 0) && (My_Chip_initialized == 1)\n");
+            fflush(stdout);
+            // *** debug - read the watchdog to make sure it is off
+            watchdog_value = Read_Dword(RC_RAA_RD_RAM, SRR_MSC_STF) & (1 << 15);
 
-    //         SRR_TS_TIME_content = 3;
-    //         printf("SRR_TS_TIME_content%d\n", SRR_TS_TIME_content);
-    //         fflush(stdout);
+            SRR_TS_TIME_content = 3;
+            printf("SRR_TS_TIME_content%d\n", SRR_TS_TIME_content);
+            fflush(stdout);
 
-    //         My_Time_Conversion_Mode();
+            My_Time_Conversion_Mode();
 
-    //         /* Update Configuration */
-    //         if (My_New_FHL_mV > 0)
-    //         {
-    //             printf("My_New_FHL_mV > 0\n");
-    //             fflush(stdout);
-    //             /* Update System Handling Register
-    //              * SHR_FHL_U (First Hit Level Up) 0x0DA
-    //              * SHR_FHL_D (First Hit Level Down) 0x0DB
-    //              */
-    //             My_New_FHL = My_New_FHL_mV / 0.88;
+            /* Update Configuration */
+            if (My_New_FHL_mV > 0)
+            {
+                printf("My_New_FHL_mV > 0\n");
+                fflush(stdout);
+                /* Update System Handling Register
+                 * SHR_FHL_U (First Hit Level Up) 0x0DA
+                 * SHR_FHL_D (First Hit Level Down) 0x0DB
+                 */
+                My_New_FHL = My_New_FHL_mV / 0.88;
 
-    //             Write_Dword(RC_RAA_WR_RAM, SHR_FHL_U, My_New_FHL);
-    //             Write_Dword(RC_RAA_WR_RAM, SHR_FHL_D, My_New_FHL);
+                Write_Dword(RC_RAA_WR_RAM, SHR_FHL_U, My_New_FHL);
+                Write_Dword(RC_RAA_WR_RAM, SHR_FHL_D, My_New_FHL);
 
-    //             My_Set_FHL_mV = My_New_FHL_mV;
-    //             My_New_FHL_mV = 0;
-    //         }
-    //     } // End of (My_INTN_State == true) query
+                My_Set_FHL_mV = My_New_FHL_mV;
+                My_New_FHL_mV = 0;
+            }
+        } // End of (My_INTN_State == true) query
 
-    //     /* Reload Configuration */
-    //     if (My_New_Configuration > 0)
-    //     {
-    //         printf("My_New_Configuration > 0\n");
-    //         fflush(stdout);
-    //         My_Chip_initialized = 0;
-    //         My_Chip_config_1 = 0;
-    //         My_Chip_config_2 = 0;
-    //         My_Chip_config_3 = 0;
+        /* Reload Configuration */
+        if (My_New_Configuration > 0)
+        {
+            printf("My_New_Configuration > 0\n");
+            fflush(stdout);
+            My_Chip_initialized = 0;
+            My_Chip_config_1 = 0;
+            My_Chip_config_2 = 0;
+            My_Chip_config_3 = 0;
 
-    //         Put_UFC_Into_Idle();
-    //         My_Chip_idle_state = 1;
+            Put_UFC_Into_Idle();
+            My_Chip_idle_state = 1;
 
-    //         if (My_New_Configuration != 99)
-    //         {
-    //             printf("My_New_Configuration != 99\n");
-    //             fflush(stdout);
-    //             // AS6031_ST_NS
-    //             // strcpy(My_Configuration, "AS6031_ST_NS");
-    //             My_Chip_config_2 = 1;
+            if (My_New_Configuration != 99)
+            {
+                printf("My_New_Configuration != 99\n");
+                fflush(stdout);
+                // AS6031_ST_NS
+                // strcpy(My_Configuration, "AS6031_ST_NS");
+                My_Chip_config_2 = 1;
 
-    //             writeConfig();
+                writeConfig();
 
-    //             My_Set_FHL_mV = Read_Dword(RC_RAA_RD_RAM, SHR_ZCD_FHL_U);
-    //             My_Set_FHL_mV *= 0.88;
+                My_Set_FHL_mV = Read_Dword(RC_RAA_RD_RAM, SHR_ZCD_FHL_U);
+                My_Set_FHL_mV *= 0.88;
 
-    //             Write_Opcode(RC_MCT_ON); // RC_MCT_ON
-    //             // Write_Opcode(RC_IF_CLR);
-    //             My_Chip_idle_state = 0;
-    //             My_Init_State();
-    //         }
-    //     }
+                Write_Opcode(RC_MCT_ON); // RC_MCT_ON
+                // Write_Opcode(RC_IF_CLR);
+                My_Chip_idle_state = 0;
+                My_Init_State();
+            }
+        }
 
-    //     // With any ERROR
-    //     // Initialisation of DUT will be cleared
-    //     if (Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG))
-    //     {
-    //         printf("Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG)\n");
-    //         fflush(stdout);
-    //         My_Chip_initialized = 0;
-    //         My_Init_State();
-    //     }
+        // With any ERROR
+        // Initialisation of DUT will be cleared
+        if (Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG))
+        {
+            printf("Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG)\n");
+            fflush(stdout);
+            My_Chip_initialized = 0;
+            My_Init_State();
+        }
 
-    // } // End of while loop
+    } // End of while loop
 }
