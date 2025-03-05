@@ -2,7 +2,7 @@
 #include <pigpio.h>
 
 #define SPI_CHANNEL 0     // Use SPI channel 0
-#define SPI_SPEED 500000 // SPI speed (500 kHz)
+#define SPI_SPEED 1000000 // SPI speed (1 MHz)
 #define CS_GPIO 25        // Chip Select GPIO pin
 
 #define LOW 0

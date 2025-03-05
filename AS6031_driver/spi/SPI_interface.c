@@ -16,7 +16,7 @@ void spi_init()
     }
 
     // Open SPI device
-    spi_handle = spiOpen(SPI_CHANNEL, SPI_SPEED, 0);
+    spi_handle = spiOpen(SPI_CHANNEL, SPI_SPEED, 1);
     if (spi_handle < 0)
     {
         fprintf(stderr, "Failed to open SPI device!\n");
