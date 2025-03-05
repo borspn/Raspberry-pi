@@ -167,7 +167,7 @@ void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword
   PUT_SSN_LOW;
   /* 2.a Transmit register address */
   spiWrite(spi_handle, spiTX, 2); 
-  PUT_SSN_HIGH  
+  PUT_SSN_HIGH;
   /* 2.b Transmit register address incrementally */
   PUT_SSN_LOW;
   for (int i = from_addr; i <= to_addr; i++) {
