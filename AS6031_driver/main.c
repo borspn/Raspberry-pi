@@ -170,7 +170,7 @@ void writeConfig(void)
         0x00000001, // [0xC3] CR_USM_OPT
         0x0011F7FF, // [0xC4] CR_IEH
         0x6046EF29, // [0xC5] CR_CPM
-        0x01012100, // [0xC6] CR_MRG_TS
+        0x00210101,//0x01012100, // [0xC6] CR_MRG_TS
         0x00240000, // [0xC7] CR_TPM
         0x006807E4, // [0xC8] CR_USM_PRC
         0x60160204, // [0xC9] CR_USM_FRC
