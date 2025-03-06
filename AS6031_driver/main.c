@@ -93,7 +93,7 @@ int main()
 
     spi_init();
     AS6031_Init_CFG(&DUT, Reg);
-    configureISR();
+    
     Write_Opcode(RC_SYS_RST);
 
     DUT.State = AS6031_STATE_RESET;
@@ -231,7 +231,7 @@ int main()
     Write_Opcode(RC_SYS_RST);
 
     
-
+    configureISR();
     while (1)
     {
         printf("main while\n");
