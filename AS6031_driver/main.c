@@ -93,6 +93,7 @@ int main()
 
     spi_init();
     AS6031_Init_CFG(&DUT, Reg);
+    configureISR();
     Write_Opcode(RC_SYS_RST);
 
     DUT.State = AS6031_STATE_RESET;
@@ -229,7 +230,7 @@ int main()
     // END
     Write_Opcode(RC_SYS_RST);
 
-    configureISR();
+    
 
     while (1)
     {
@@ -244,7 +245,6 @@ int main()
         // NVIC Functionality to increase the speed of MCU
         while (My_INTN_State == 1)
         {
-            usleep(1000);
         }
         RAW_Result = Read_Dword(RC_RAA_RD, 0x88); // FDB_US_TOF_0_U
 
