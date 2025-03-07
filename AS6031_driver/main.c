@@ -14,6 +14,7 @@
 
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
+#define FILE_PATH "data_log.csv"
 
 // volatile bool My_INTN_State = false;
 volatile uint8_t My_INTN_State = 1; /* low active */
@@ -415,8 +416,10 @@ void My_Time_Conversion_Mode(void)
                     MyTOFSumAvgUP_ns = MyTOFSumAvgUP / 1e-9;
                     MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
                     MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
-                    printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+                    fprintf(file, "%ld\t%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+                    printf("Appended: %ld\t%.3f\t%.3f\t%.3f\n", seconds, avg_up, avg_down, diff_tof);
                     fflush(stdout);
+                    fclose(file);
                 }
             }
 
@@ -457,6 +460,18 @@ int main()
 
     spi_init();
     configureISR();
+
+    FILE *file = fopen(FILE_PATH, "a");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+    
+    // Write header if file is empty
+    fseek(file, 0, SEEK_END);
+    if (ftell(file) == 0) {
+        fprintf(file, "MyTOFSumAvgUP_ns\tMyTOFSumAvgDOWN_ns\tMyDiffTOFSumAvg_ps\n");
+    }
 
     while (1)
     {
