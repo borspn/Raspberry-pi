@@ -292,7 +292,7 @@ void My_Time_Conversion_Mode(void)
     printf("My_Time_Conversion_Mode\n");
     fflush(stdout);
 
-    FILE *file = fopen(FILE_PATH, "a");
+    FILE *file = fopen("data.csv", "a");
     if (file == NULL) {
         perror("Error opening file");
         return;
