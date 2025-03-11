@@ -288,6 +288,21 @@ void My_Time_Conversion_Mode(void)
 {
     printf("My_Time_Conversion_Mode\n");
     fflush(stdout);
+
+    printf("My_Time_Conversion_Mode\n");
+    fflush(stdout);
+
+    FILE *file = fopen(FILE_PATH, "a");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    // Write header if file is empty
+    fseek(file, 0, SEEK_END);
+    if (ftell(file) == 0) {
+        fprintf(file, "MyTOFSumAvgUP_ns\tMyTOFSumAvgDOWN_ns\tMyDiffTOFSumAvg_ps\n");
+    }
     /* Time Conversion Mode */
     /* Cylce A = ~ 370 µs @SPI = 2.5 MHz*/
     /* Cylce B = ~ 160 µs @SPI = 2.5 MHz*/
