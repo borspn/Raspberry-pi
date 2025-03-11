@@ -493,7 +493,7 @@ int main()
             // *** debug - read the watchdog to make sure it is off
             watchdog_value = Read_Dword(RC_RAA_RD_RAM, SRR_MSC_STF) & (1 << 15);
 
-            SRR_TS_TIME_content = 3;
+            //SRR_TS_TIME_content = 3;
             printf("SRR_TS_TIME_content%d\n", SRR_TS_TIME_content);
             fflush(stdout);
 
