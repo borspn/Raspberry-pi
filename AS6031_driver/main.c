@@ -14,6 +14,10 @@
 
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
+#define CHIPNAME "gpiochip0"
+
+struct gpiod_chip *chip;
+struct gpiod_line *irq_line;
 
 // volatile bool My_INTN_State = false;
 volatile uint8_t My_INTN_State = 1; /* low active */
@@ -266,14 +270,32 @@ float Calc_Amplitude(uint32_t AM_address, uint32_t AMC_VH, uint32_t AMC_VL)
 
 bool configureISR()
 {
-    gpioSetMode(INTERRUPT_GPIO_PIN, PI_INPUT);
-    gpioSetPullUpDown(INTERRUPT_GPIO_PIN, PI_PUD_UP);
-    if (gpioSetAlertFunc(INTERRUPT_GPIO_PIN, gpio_callback) < 0)
+
+    // Get the GPIO line for the interrupt pin
+    irq_line = gpiod_chip_get_line(chip, INTERRUPT_GPIO_PIN);
+    if (!irq_line)
     {
-        printf("Failed to set alert function!\n");
+        perror("Failed to get GPIO line");
+        gpiod_chip_close(chip);
         return false;
     }
+    if (gpiod_line_request_falling_edge_events_flags(irq_line, "interrupt_handler", GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP) < 0)
+    {
+        perror("Failed to request GPIO line for interrupts");
+        gpiod_chip_close(chip);
+        return false;
+    }
+
     return true;
+
+    // gpioSetMode(INTERRUPT_GPIO_PIN, PI_INPUT);
+    // gpioSetPullUpDown(INTERRUPT_GPIO_PIN, PI_PUD_UP);
+    // if (gpioSetAlertFunc(INTERRUPT_GPIO_PIN, gpio_callback) < 0)
+    // {
+    //     printf("Failed to set alert function!\n");
+    //     return false;
+    // }
+    // return true;
 }
 
 void Put_UFC_Into_Idle(void)
