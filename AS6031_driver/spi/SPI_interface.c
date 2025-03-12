@@ -51,6 +51,15 @@ void spi_init()
         exit(1);
     }
 
+
+    uint8_t mode = SPI_MODE_1;  // Change to SPI_MODE_2 if needed
+    if (ioctl(spi_handle, SPI_IOC_WR_MODE, &mode) < 0)
+    {
+        perror("Failed to set SPI mode");
+        close(spi_handle);
+        exit(1);
+    }
+    
     uint32_t speed = SPI_SPEED_HZ;
     if (ioctl(spi_handle, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0)
     {
