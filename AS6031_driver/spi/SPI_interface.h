@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <gpiod.h>
 #include <fcntl.h>
-#include <unistd.h>
+
 
 #define SPI_CHANNEL 0     // Use SPI channel 0
 #define SPI_SPEED 1000000 // SPI speed (1 MHz)

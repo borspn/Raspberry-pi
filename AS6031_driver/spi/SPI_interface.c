@@ -1,6 +1,7 @@
 #include "SPI_interface.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 
 int spi_handle;
