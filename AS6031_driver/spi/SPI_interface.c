@@ -2,10 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int spi_handle;
-struct gpiod_chip *chip;
-struct gpiod_line *cs_line;
-
 /**
  * @brief Initialize SPI communication using libgpiod.
  */
