@@ -3,32 +3,49 @@
 #include <stdlib.h>
 
 int spi_handle;
+struct gpiod_chip *chip;
+struct gpiod_line *cs_line;
 
 /**
- * @brief Initialize SPI communication using pigpio.
+ * @brief Initialize SPI communication using libgpiod.
  */
 void spi_init()
 {
-    if (gpioInitialise() < 0)
+    // Open GPIO chip
+    chip = gpiod_chip_open_by_name("gpiochip0");
+    if (!chip)
     {
-        fprintf(stderr, "Failed to initialize pigpio!\n");
+        fprintf(stderr, "Failed to open GPIO chip!\n");
         exit(1);
     }
 
-    // Open SPI device
-    spi_handle = spiOpen(SPI_CHANNEL, SPI_SPEED, 1);
-    if (spi_handle < 0)
+    // Open CS GPIO line
+    cs_line = gpiod_chip_get_line(chip, CS_GPIO);
+    if (!cs_line)
     {
-        fprintf(stderr, "Failed to open SPI device!\n");
-        gpioTerminate();
+        fprintf(stderr, "Failed to get CS GPIO line!\n");
+        gpiod_chip_close(chip);
         exit(1);
     }
 
     // Set CS GPIO as output and default HIGH (inactive)
-    gpioSetMode(CS_GPIO, PI_OUTPUT);
-    PUT_SSN_HIGH;
+    if (gpiod_line_request_output(cs_line, "spi", 1) < 0)
+    {
+        fprintf(stderr, "Failed to set CS GPIO as output!\n");
+        gpiod_chip_close(chip);
+        exit(1);
+    }
 
-    printf("SPI initialized using pigpio!\n");
+    // Open SPI device
+    spi_handle = open("/dev/spidev0.0", O_RDWR);
+    if (spi_handle < 0)
+    {
+        fprintf(stderr, "Failed to open SPI device!\n");
+        gpiod_chip_close(chip);
+        exit(1);
+    }
+
+    printf("SPI initialized using libgpiod!\n");
 }
 
 /**
@@ -36,8 +53,8 @@ void spi_init()
  */
 void spi_close()
 {
-    spiClose(spi_handle);
-    gpioTerminate();
+    close(spi_handle);
+    gpiod_chip_close(chip);
     printf("SPI closed and GPIO released.\n");
 }
 
@@ -46,9 +63,9 @@ void spi_close()
  */
 void Write_Opcode(char one_byte)
 {
-    PUT_SSN_LOW;
-    spiWrite(spi_handle, &one_byte, 1); // Send opcode
-    PUT_SSN_HIGH;
+    gpiod_line_set_value(cs_line, 0);
+    write(spi_handle, &one_byte, 1); // Send opcode
+    gpiod_line_set_value(cs_line, 1);
 }
 
 /**
@@ -67,10 +84,10 @@ void Write_Dword(char opcode, uint8_t address, uint32_t dword)
     spiTX[4] = temp_u32 >> 8;
     spiTX[5] = temp_u32;
 
-    PUT_SSN_LOW;
+    gpiod_line_set_value(cs_line, 0);
     /* 2. Transmit register address */
-    spiWrite(spi_handle, spiTX, 6);
-    PUT_SSN_HIGH;
+    write(spi_handle, spiTX, 6);
+    gpiod_line_set_value(cs_line, 1);
 }
 
 /**
@@ -85,9 +102,9 @@ void Write_Byte2(char opcode, uint16_t address, uint8_t byte)
     spiTX[2] = address & 0xFF;
     spiTX[3] = byte;
 
-    PUT_SSN_LOW;
-    spiWrite(spi_handle, spiTX, 4);
-    PUT_SSN_HIGH;
+    gpiod_line_set_value(cs_line, 0);
+    write(spi_handle, spiTX, 4);
+    gpiod_line_set_value(cs_line, 1);
 }
 
 uint32_t Read_Dword(char rd_opcode, uint8_t address)
@@ -98,20 +115,20 @@ uint32_t Read_Dword(char rd_opcode, uint8_t address)
 
     spiTX[0] = rd_opcode;
     spiTX[1] = address;
-    PUT_SSN_LOW;
-    spiWrite(spi_handle, spiTX, 2); // Send opcode/address, receive data
-    spiRead(spi_handle, spiRX, 4);
-    PUT_SSN_HIGH;
+    gpiod_line_set_value(cs_line, 0);
+    write(spi_handle, spiTX, 2); // Send opcode/address, receive data
+    read(spi_handle, spiRX, 4);
+    gpiod_line_set_value(cs_line, 1);
     temp_u32 = (spiRX[0] << 24) + (spiRX[1] << 16) + (spiRX[2] << 8) + (spiRX[3]);
 
     return temp_u32;
 }
+
 /**
  * @brief Read specific bits from a double word.
  */
 uint32_t Read_Dword_Bits(char rd_opcode, uint8_t address, uint8_t msbit, uint8_t lsbit)
 {
-
     if (msbit > 31)
         msbit = 31;
     if (msbit >= 32)
@@ -124,7 +141,7 @@ uint32_t Read_Dword_Bits(char rd_opcode, uint8_t address, uint8_t msbit, uint8_t
     uint32_t temp_u32 = (address_content >> lsbit) & bit_mask;
 
     return temp_u32;
-} // TODO: Clarify this function with ScioSense
+}
 
 /**
  * @brief Write two bytes via SPI.
@@ -132,39 +149,35 @@ uint32_t Read_Dword_Bits(char rd_opcode, uint8_t address, uint8_t msbit, uint8_t
 void Write_Opcode2(char byte1, char byte2)
 {
     char spiTX[2] = {byte1, byte2};
-    PUT_SSN_LOW;
-    spiWrite(spi_handle, spiTX, 2);
-    PUT_SSN_HIGH;
+    gpiod_line_set_value(cs_line, 0);
+    write(spi_handle, spiTX, 2);
+    gpiod_line_set_value(cs_line, 1);
 }
 
 void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword_array, int to_addr)
 {
-  /* Timeout duration in millisecond [ms] */
-  uint8_t spiTX[4];
-  uint32_t temp_u32 = 0;
+    uint8_t spiTX[4];
+    uint32_t temp_u32 = 0;
 
-  spiTX[0] = opcode;
-  spiTX[1] = from_addr;
+    spiTX[0] = opcode;
+    spiTX[1] = from_addr;
 
-//  /* to start at expected index */
-//  dword_array += from_addr; 
-  
+    gpiod_line_set_value(cs_line, 0);
+    /* 2.a Transmit register address */
+    write(spi_handle, spiTX, 2);
 
-  PUT_SSN_LOW;
-  /* 2.a Transmit register address */
-  spiWrite(spi_handle, spiTX, 2); 
- 
-  /* 2.b Transmit register address incrementally */
-  for (int i = from_addr; i <= to_addr; i++) {
-    temp_u32 = *dword_array;
-    spiTX[0] = temp_u32>>24;
-    spiTX[1] = temp_u32>>16;
-    spiTX[2] = temp_u32>>8;
-    spiTX[3] = temp_u32;
+    /* 2.b Transmit register address incrementally */
+    for (int i = from_addr; i <= to_addr; i++)
+    {
+        temp_u32 = *dword_array;
+        spiTX[0] = temp_u32 >> 24;
+        spiTX[1] = temp_u32 >> 16;
+        spiTX[2] = temp_u32 >> 8;
+        spiTX[3] = temp_u32;
 
-    spiWrite(spi_handle, spiTX, 4); 
+        write(spi_handle, spiTX, 4);
 
-    dword_array++;
-  }
-    PUT_SSN_HIGH;
+        dword_array++;
+    }
+    gpiod_line_set_value(cs_line, 1);
 }
