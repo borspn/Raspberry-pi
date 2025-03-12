@@ -2,6 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+extern int spi_handle;
+extern struct gpiod_chip *chip;
+extern struct gpiod_line *cs_line;
+extern struct gpiod_line *irq_line;
 /**
  * @brief Initialize SPI communication using libgpiod.
  */

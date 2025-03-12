@@ -12,10 +12,10 @@
 #define PUT_SSN_LOW gpioWrite(CS_GPIO, LOW)
 #define PUT_SSN_HIGH gpioWrite(CS_GPIO, HIGH)
 
-extern int spi_handle;
-extern struct gpiod_chip *chip;
-extern struct gpiod_line *cs_line;
-extern struct gpiod_line *irq_line;
+int spi_handle;
+struct gpiod_chip *chip;
+struct gpiod_line *cs_line;
+struct gpiod_line *irq_line;
 
 // Initializes the SPI interface
 void spi_init();

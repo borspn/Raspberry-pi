@@ -16,10 +16,10 @@
 #define INTERRUPT_GPIO_PIN 23
 #define CHIPNAME "gpiochip0"
 
-int spi_handle;
-struct gpiod_chip *chip;
-struct gpiod_line *cs_line;
-struct gpiod_line *irq_line;
+extern int spi_handle;
+extern struct gpiod_chip *chip;
+extern struct gpiod_line *cs_line;
+extern struct gpiod_line *irq_line;
 
 
 // volatile bool My_INTN_State = false;
