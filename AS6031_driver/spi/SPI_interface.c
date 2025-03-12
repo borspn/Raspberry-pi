@@ -1,4 +1,6 @@
 #include "SPI_interface.h"
+#include <linux/spi/spidev.h>  // For SPI_IOC_WR_MAX_SPEED_HZ
+#include <sys/ioctl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
