@@ -4,6 +4,8 @@
 #include <unistd.h>
 
 
+#define SPI_SPEED_HZ 500000  // Set SPI clock speed to 500kHz
+
 int spi_handle;
 struct gpiod_chip *chip;
 struct gpiod_line *cs_line;
@@ -43,6 +45,15 @@ void spi_init()
     if (spi_handle < 0)
     {
         fprintf(stderr, "Failed to open SPI device!\n");
+        gpiod_chip_close(chip);
+        exit(1);
+    }
+
+    uint32_t speed = SPI_SPEED_HZ;
+    if (ioctl(spi_handle, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0)
+    {
+        fprintf(stderr, "Failed to set SPI speed!\n");
+        close(spi_handle);
         gpiod_chip_close(chip);
         exit(1);
     }
