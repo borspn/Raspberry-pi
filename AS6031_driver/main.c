@@ -1,7 +1,6 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
-#include "AS6031_Coding.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -451,8 +450,8 @@ void My_Time_Conversion_Mode(void)
                     MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
                     MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
                     // printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-                    fprintf(file, "%ld\t%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-                    printf("Appended: %ld\t%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+                    fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+                    printf("Appended: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
                     fflush(stdout);
                 }
             }

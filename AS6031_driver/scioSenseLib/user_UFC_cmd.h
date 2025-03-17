@@ -40,8 +40,6 @@
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-#define LOW  ((uint8_t)0)
-#define HIGH ((uint8_t)1)
 
 #define NOT_LOCKED ((uint8_t)0)
 #define LOCKED     ((uint8_t)1)
