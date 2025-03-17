@@ -1,5 +1,8 @@
+
 #include <stdint.h>
-#include <pigpio.h>
+#include <gpiod.h>
+#include <fcntl.h>
+
 
 #define SPI_CHANNEL 0     // Use SPI channel 0
 #define SPI_SPEED 1000000 // SPI speed (1 MHz)
@@ -9,6 +12,11 @@
 #define HIGH 1
 #define PUT_SSN_LOW gpioWrite(CS_GPIO, LOW)
 #define PUT_SSN_HIGH gpioWrite(CS_GPIO, HIGH)
+
+extern int spi_handle;
+extern struct gpiod_chip *chip;
+extern struct gpiod_line *cs_line;
+extern struct gpiod_line *irq_line;
 
 // Initializes the SPI interface
 void spi_init();

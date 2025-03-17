@@ -1,4 +1,4 @@
-# Makefile for compiling SPI_interface.c and main.c with pigpio library
+# Makefile for compiling SPI_interface.c and main.c with libgpiod library
 
 # Compiler
 CC = gcc
@@ -13,7 +13,7 @@ INCLUDES = -I/usr/local/include
 LIBDIRS = -L/usr/local/lib
 
 # Libraries to link against
-LIBS = -lpigpio -lpthread
+LIBS = -lgpiod -lpthread
 
 # Source files
 SRCS = main.c spi/SPI_interface.c
