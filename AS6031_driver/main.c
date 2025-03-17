@@ -1,7 +1,6 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
-#include "AS6031_Coding.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
