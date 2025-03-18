@@ -1,7 +1,6 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
-#include "AS6031_Coding.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +13,8 @@
 
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
+#define CHIPNAME "gpiochip0"
+
 
 // volatile bool My_INTN_State = false;
 volatile uint8_t My_INTN_State = 1; /* low active */
@@ -266,14 +267,32 @@ float Calc_Amplitude(uint32_t AM_address, uint32_t AMC_VH, uint32_t AMC_VL)
 
 bool configureISR()
 {
-    gpioSetMode(INTERRUPT_GPIO_PIN, PI_INPUT);
-    gpioSetPullUpDown(INTERRUPT_GPIO_PIN, PI_PUD_UP);
-    if (gpioSetAlertFunc(INTERRUPT_GPIO_PIN, gpio_callback) < 0)
+
+    // Get the GPIO line for the interrupt pin
+    irq_line = gpiod_chip_get_line(chip, INTERRUPT_GPIO_PIN);
+    if (!irq_line)
     {
-        printf("Failed to set alert function!\n");
+        perror("Failed to get GPIO line");
+        gpiod_chip_close(chip);
         return false;
     }
+    if (gpiod_line_request_falling_edge_events_flags(irq_line, "interrupt_handler", GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP) < 0)
+    {
+        perror("Failed to request GPIO line for interrupts");
+        gpiod_chip_close(chip);
+        return false;
+    }
+
     return true;
+
+    // gpioSetMode(INTERRUPT_GPIO_PIN, PI_INPUT);
+    // gpioSetPullUpDown(INTERRUPT_GPIO_PIN, PI_PUD_UP);
+    // if (gpioSetAlertFunc(INTERRUPT_GPIO_PIN, gpio_callback) < 0)
+    // {
+    //     printf("Failed to set alert function!\n");
+    //     return false;
+    // }
+    // return true;
 }
 
 void Put_UFC_Into_Idle(void)
@@ -431,8 +450,8 @@ void My_Time_Conversion_Mode(void)
                     MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
                     MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
                     // printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-                    fprintf(file, "%ld\t%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-                    printf("Appended: %ld\t%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+                    fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+                    printf("Appended: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
                     fflush(stdout);
                 }
             }
@@ -487,7 +506,9 @@ int main()
         My_Loop_Pass_Counter += 1; // counts every loop
 
         //	  printf("%02d:%02d:%02d\n", currTime.Hours, currTime.Minutes, currTime.Seconds);
-
+        printf("My_INTN_State%d\n", My_INTN_State);
+        printf("My_Chip_initialized%d\n", My_Chip_initialized);
+        fflush(stdout);
         if ((My_INTN_State == 0) && (My_Chip_initialized == 1))
         {
             printf("(My_INTN_State == 0) && (My_Chip_initialized == 1)\n");
@@ -495,7 +516,7 @@ int main()
             // *** debug - read the watchdog to make sure it is off
             watchdog_value = Read_Dword(RC_RAA_RD_RAM, SRR_MSC_STF) & (1 << 15);
 
-            SRR_TS_TIME_content = 3;
+            SRR_TS_TIME_content = 5;
             printf("SRR_TS_TIME_content%d\n", SRR_TS_TIME_content);
             fflush(stdout);
 
