@@ -477,8 +477,8 @@ int main()
     fflush(stdout);
 
     spi_init();
-    configureISR();
     Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
+    configureISR();
     while (1)
     {
         printf("while main!\n");
