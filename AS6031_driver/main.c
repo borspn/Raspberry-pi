@@ -222,7 +222,7 @@ float Calc_TimeOfFlight(uint32_t TOF_address)
 void gpio_callback(int gpio, int level, uint32_t tick)
 {
     printf("Interrupt detected on GPIO %d! Level: %d, Timestamp: %u\n", gpio, level, tick);
-    if (level == 0)
+    if (level == 1)
     {
         My_INTN_State = 0;
     }   
