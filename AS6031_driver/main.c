@@ -362,7 +362,6 @@ void My_Time_Conversion_Mode(void)
         MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
 
         velocity = ((abs(MyDiffTOFSumAvg_ps) * 1E-9) * (speedOfSoundInWaterMps * speedOfSoundInWaterMps)) / (2 * lenSensorInM);
-        // printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
         printf("velocity%f\n", velocity);
         fflush(stdout);
         fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
