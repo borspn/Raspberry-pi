@@ -315,72 +315,35 @@ void My_Time_Conversion_Mode(void)
          * out of the frontend data buffer */
 
         My_Cycle_A_Counter += 1; // counts every call
+        /* Updating TOF Values */
+        MyTOFSumAvgUP = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_U) / TOF_HIT_NO;
+        MyTOFSumAvgDOWN = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_D) / TOF_HIT_NO;
+        printf("MyTOFSumAvgUP%f MyTOFSumAvgDOWN%f\n", MyTOFSumAvgUP, MyTOFSumAvgDOWN);
+        fflush(stdout);
 
-        if (SRR_FEP_STF_content & (US_AMC_UPD_mask))
-        {
-            /* Updating of Ultrasonic amplitude calibration values */
-            MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
-            MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
-            printf("MyRAWAMCVH%d MyRAWAMCVL%d\n", MyRAWAMCVH, MyRAWAMCVL);
-            fflush(stdout);
-        }
+        // post processing and calculation
+        MyDiffTOFSumAvg = (MyTOFSumAvgDOWN - MyTOFSumAvgUP);
+        printf("MyDiffTOFSumAvg%f\n", MyDiffTOFSumAvg);
+        fflush(stdout);
 
-        if (SRR_FEP_STF_content & (US_AM_UPD_mask))
-        {
-            /* If amplitude calibration values = ZERO
-             * Reloading amplitude calibration values */
-            if (MyRAWAMCVH == 0 || MyRAWAMCVL == 0)
-            {
-                MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
-                MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
-                printf("MyRAWAMCVH%d MyRAWAMCVL%d\n", MyRAWAMCVH, MyRAWAMCVL);
-                fflush(stdout);
-            }
+        MyRealPWUP = MyRAWPWUP;
+        MyRealPWUP /= (1 << 7);
+        MyRealPWDOWN = MyRAWPWDOWN;
+        MyRealPWDOWN /= (1 << 7);
 
-            /* If amplitude calibration values are available
-             * Updating amplitude values */
-            if (MyRAWAMCVH != 0 && MyRAWAMCVL != 0)
-            {
-                MyRealAMUP = Calc_Amplitude(FDB_US_AM_U, MyRAWAMCVH, MyRAWAMCVL);
-                MyRealAMDOWN = Calc_Amplitude(FDB_US_AM_D, MyRAWAMCVH, MyRAWAMCVL);
-                printf("MyRealAMUP%f MyRealAMDOWN%f\n", MyRealAMUP, MyRealAMDOWN);
-                fflush(stdout);
-            }
-        }
-
-        if (SRR_FEP_STF_content & (US_TOF_UPD_mask | US_D_UPD_mask | US_U_UPD_mask))
-        {
-            /* Updating TOF Values */
-            MyTOFSumAvgUP = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_U) / TOF_HIT_NO;
-            MyTOFSumAvgDOWN = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_D) / TOF_HIT_NO;
-            printf("MyTOFSumAvgUP%f MyTOFSumAvgDOWN%f\n", MyTOFSumAvgUP, MyTOFSumAvgDOWN);
-            fflush(stdout);
-
-            // post processing and calculation
-            MyDiffTOFSumAvg = (MyTOFSumAvgDOWN - MyTOFSumAvgUP);
-            printf("MyDiffTOFSumAvg%f\n", MyDiffTOFSumAvg);
-            fflush(stdout);
-
-            MyRealPWUP = MyRAWPWUP;
-            MyRealPWUP /= (1 << 7);
-            MyRealPWDOWN = MyRAWPWDOWN;
-            MyRealPWDOWN /= (1 << 7);
-
-            // scaling
-            MyTOFSumAvgUP_ns = MyTOFSumAvgUP / 1e-9;
-            MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
-            MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
-            // printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-            fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-            printf("Appended: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-            fflush(stdout);
-        }
-
-        /* STEP 5 - Clear interrupt flag, error flag & frontend status
-         * flag register by writing code to SHR_EXC */
-        Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
-    } // End of Post Processing
-}
+        // scaling
+        MyTOFSumAvgUP_ns = MyTOFSumAvgUP / 1e-9;
+        MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
+        MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
+        // printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+        fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+        printf("Appended: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+        fflush(stdout);
+    }
+    /* STEP 5 - Clear interrupt flag, error flag & frontend status
+     * flag register by writing code to SHR_EXC */
+    Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
+} // End of Post Processing
 
 int main()
 {
