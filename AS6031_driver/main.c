@@ -15,7 +15,6 @@
 #define INTERRUPT_GPIO_PIN 23
 #define CHIPNAME "gpiochip0"
 
-
 // volatile bool My_INTN_State = false;
 volatile uint8_t My_INTN_State = 1; /* low active */
 
@@ -219,12 +218,6 @@ float Calc_TimeOfFlight(uint32_t TOF_address)
     return FLOATValue;
 }
 
-void gpio_callback(int gpio, int level, uint32_t tick)
-{
-    printf("Interrupt detected on GPIO %d! Level: %d, Timestamp: %u\n", gpio, level, tick);
-    My_INTN_State = 0;
-}
-
 void My_Init_State(void)
 {
     /* reset counter */
@@ -265,36 +258,6 @@ float Calc_Amplitude(uint32_t AM_address, uint32_t AMC_VH, uint32_t AMC_VL)
     return FLOATValue;
 }
 
-bool configureISR()
-{
-
-    // Get the GPIO line for the interrupt pin
-    irq_line = gpiod_chip_get_line(chip, INTERRUPT_GPIO_PIN);
-    if (!irq_line)
-    {
-        perror("Failed to get GPIO line");
-        gpiod_chip_close(chip);
-        return false;
-    }
-    if (gpiod_line_request_falling_edge_events_flags(irq_line, "interrupt_handler", GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP) < 0)
-    {
-        perror("Failed to request GPIO line for interrupts");
-        gpiod_chip_close(chip);
-        return false;
-    }
-
-    return true;
-
-    // gpioSetMode(INTERRUPT_GPIO_PIN, PI_INPUT);
-    // gpioSetPullUpDown(INTERRUPT_GPIO_PIN, PI_PUD_UP);
-    // if (gpioSetAlertFunc(INTERRUPT_GPIO_PIN, gpio_callback) < 0)
-    // {
-    //     printf("Failed to set alert function!\n");
-    //     return false;
-    // }
-    // return true;
-}
-
 void Put_UFC_Into_Idle(void)
 {
     Write_Opcode(RC_SYS_RST);                           // Reset UFC completely
@@ -308,32 +271,26 @@ void My_Time_Conversion_Mode(void)
     printf("My_Time_Conversion_Mode\n");
     fflush(stdout);
 
-    printf("My_Time_Conversion_Mode\n");
-    fflush(stdout);
-
     FILE *file = fopen("data.csv", "a");
-    if (file == NULL) {
+    if (file == NULL)
+    {
         perror("Error opening file");
         return;
     }
 
     // Write header if file is empty
     fseek(file, 0, SEEK_END);
-    if (ftell(file) == 0) {
+    if (ftell(file) == 0)
+    {
         fprintf(file, "MyTOFSumAvgUP_ns\tMyTOFSumAvgDOWN_ns\tMyDiffTOFSumAvg_ps\n");
     }
     /* Time Conversion Mode */
     /* Cylce A = ~ 370 µs @SPI = 2.5 MHz*/
     /* Cylce B = ~ 160 µs @SPI = 2.5 MHz*/
 
-    /* STEP 2 - Read SRR_ERR_FLAG to check if any error
+    /* STEP - Read SRR_ERR_FLAG to check if any error
      *  occurred during last measurement cycle */
     SRR_ERR_FLAG_content = Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG);
-    /* STEP 3 - Read SRR_FEP_STF to check which
-     * measurement has been updated in last measure cycle */
-    SRR_FEP_STF_content = Read_Dword(RC_RAA_RD_RAM, SRR_FEP_STF);
-    printf("SRR_ERR_FLAG_content%d SRR_FEP_STF_content%d\n", SRR_ERR_FLAG_content, SRR_FEP_STF_content);
-    fflush(stdout);
 
     if (SRR_ERR_FLAG_content > 0)
     {
@@ -347,142 +304,81 @@ void My_Time_Conversion_Mode(void)
         /* Chip has to be reinitialized */
         My_Chip_initialized = 0;
         My_Chip_idle_state = 0;
-        /* Skipping Post Processing
-         * Jump to Step 5 */
+        /* Skipping Post Processing */
     }
     else
     {
         printf("!SRR_ERR_FLAG_content > 0\n");
         fflush(stdout);
-        // Post Processing without any Error
 
-        // only if enough time, more than 1 ms
-        if (SRR_TS_TIME_content > 1)
+        /* STEP - read the measurement results
+         * out of the frontend data buffer */
+
+        My_Cycle_A_Counter += 1; // counts every call
+
+        if (SRR_FEP_STF_content & (US_AMC_UPD_mask))
         {
-            printf("SRR_TS_TIME_content > 1\n");
+            /* Updating of Ultrasonic amplitude calibration values */
+            MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
+            MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
+            printf("MyRAWAMCVH%d MyRAWAMCVL%d\n", MyRAWAMCVH, MyRAWAMCVL);
             fflush(stdout);
-            // determine min/max value for debugging Cycle A
-            if (SRR_TS_TIME_content > My_Max_Value_A)
+        }
+
+        if (SRR_FEP_STF_content & (US_AM_UPD_mask))
+        {
+            /* If amplitude calibration values = ZERO
+             * Reloading amplitude calibration values */
+            if (MyRAWAMCVH == 0 || MyRAWAMCVL == 0)
             {
-                My_Max_Value_A = SRR_TS_TIME_content;
-            }
-            if (SRR_TS_TIME_content < My_Min_Value_A)
-            {
-                My_Min_Value_A = SRR_TS_TIME_content;
-            }
-
-            /* STEP 4 - read the measurement results
-             * out of the frontend data buffer */
-
-            // Post Processing Cycle A
-            if (SRR_FEP_STF_content & (US_AMC_UPD_mask | US_AM_UPD_mask | US_TOF_EDGE_mask |
-                                       US_TOF_UPD_mask | US_D_UPD_mask | US_U_UPD_mask))
-            {
-                My_Cycle_A_Counter += 1; // counts every call
-
-                if (SRR_FEP_STF_content & (US_AMC_UPD_mask))
-                {
-                    /* Updating of Ultrasonic amplitude calibration values */
-                    MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
-                    MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
-                    printf("MyRAWAMCVH%d MyRAWAMCVL%d\n", MyRAWAMCVH, MyRAWAMCVL);
-                    fflush(stdout);
-                }
-
-                if (SRR_FEP_STF_content & (US_AM_UPD_mask))
-                {
-                    /* If amplitude calibration values = ZERO
-                     * Reloading amplitude calibration values */
-                    if (MyRAWAMCVH == 0 || MyRAWAMCVL == 0)
-                    {
-                        MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
-                        MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
-                        printf("MyRAWAMCVH%d MyRAWAMCVL%d\n", MyRAWAMCVH, MyRAWAMCVL);
-                        fflush(stdout);
-                    }
-
-                    /* If amplitude calibration values are available
-                     * Updating amplitude values */
-                    if (MyRAWAMCVH != 0 && MyRAWAMCVL != 0)
-                    {
-                        MyRealAMUP = Calc_Amplitude(FDB_US_AM_U, MyRAWAMCVH, MyRAWAMCVL);
-                        MyRealAMDOWN = Calc_Amplitude(FDB_US_AM_D, MyRAWAMCVH, MyRAWAMCVL);
-                        printf("MyRealAMUP%f MyRealAMDOWN%f\n", MyRealAMUP, MyRealAMDOWN);
-                        fflush(stdout);
-                    }
-                }
-
-                if (SRR_FEP_STF_content & (US_TOF_UPD_mask | US_D_UPD_mask | US_U_UPD_mask))
-                {
-                    /* Updating TOF Values */
-                    MyTOFSumAvgUP = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_U) / TOF_HIT_NO;
-                    MyTOFSumAvgDOWN = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_D) / TOF_HIT_NO;
-                    printf("MyTOFSumAvgUP%f MyTOFSumAvgDOWN%f\n", MyTOFSumAvgUP, MyTOFSumAvgDOWN);
-                    fflush(stdout);
-
-                    if (MyTOFSumAvgUP == 0)
-                    {
-                        My_UP_zero++;
-                    }
-                    if (MyTOFSumAvgDOWN == 0)
-                    {
-                        My_DOWN_zero++;
-                    }
-
-                    /* Updating Pulse Width Ratio */
-                    MyRAWPWUP = Read_Dword(RC_RAA_RD_RAM, FDB_US_PW_U);
-                    MyRAWPWDOWN = Read_Dword(RC_RAA_RD_RAM, FDB_US_PW_D);
-                    printf("MyRAWPWUP%d MyRAWPWDOWN%d\n", MyRAWPWUP, MyRAWPWDOWN);
-                    fflush(stdout);
-
-                    // post processing and calculation
-                    MyDiffTOFSumAvg = (MyTOFSumAvgDOWN - MyTOFSumAvgUP);
-                    printf("MyDiffTOFSumAvg%f\n", MyDiffTOFSumAvg);
-                    fflush(stdout);
-
-                    MyRealPWUP = MyRAWPWUP;
-                    MyRealPWUP /= (1 << 7);
-                    MyRealPWDOWN = MyRAWPWDOWN;
-                    MyRealPWDOWN /= (1 << 7);
-
-                    // scaling
-                    MyTOFSumAvgUP_ns = MyTOFSumAvgUP / 1e-9;
-                    MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
-                    MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
-                    // printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-                    fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-                    printf("Appended: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-                    fflush(stdout);
-                }
+                MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
+                MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
+                printf("MyRAWAMCVH%d MyRAWAMCVL%d\n", MyRAWAMCVH, MyRAWAMCVL);
+                fflush(stdout);
             }
 
-            // determine min/max value for debugging Cycle B
-            if (SRR_TS_TIME_content > My_Max_Value_B)
+            /* If amplitude calibration values are available
+             * Updating amplitude values */
+            if (MyRAWAMCVH != 0 && MyRAWAMCVL != 0)
             {
-                My_Max_Value_B = SRR_TS_TIME_content;
-            }
-            if (SRR_TS_TIME_content < My_Min_Value_B)
-            {
-                My_Min_Value_B = SRR_TS_TIME_content;
-            }
-
-            // Post Processing Cycle B
-            if (SRR_FEP_STF_content & (TM_ST_mask | TM_MODE_mask | TM_UPD_mask | HCC_UPD_mask))
-            {
-                My_Cycle_B_Counter += 1; // counts every call
+                MyRealAMUP = Calc_Amplitude(FDB_US_AM_U, MyRAWAMCVH, MyRAWAMCVL);
+                MyRealAMDOWN = Calc_Amplitude(FDB_US_AM_D, MyRAWAMCVH, MyRAWAMCVL);
+                printf("MyRealAMUP%f MyRealAMDOWN%f\n", MyRealAMUP, MyRealAMDOWN);
+                fflush(stdout);
             }
         }
-        else
+
+        if (SRR_FEP_STF_content & (US_TOF_UPD_mask | US_D_UPD_mask | US_U_UPD_mask))
         {
-            // there is not enough time
-            My_Too_Less_Time += 1;
+            /* Updating TOF Values */
+            MyTOFSumAvgUP = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_U) / TOF_HIT_NO;
+            MyTOFSumAvgDOWN = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_D) / TOF_HIT_NO;
+            printf("MyTOFSumAvgUP%f MyTOFSumAvgDOWN%f\n", MyTOFSumAvgUP, MyTOFSumAvgDOWN);
+            fflush(stdout);
+
+            // post processing and calculation
+            MyDiffTOFSumAvg = (MyTOFSumAvgDOWN - MyTOFSumAvgUP);
+            printf("MyDiffTOFSumAvg%f\n", MyDiffTOFSumAvg);
+            fflush(stdout);
+
+            MyRealPWUP = MyRAWPWUP;
+            MyRealPWUP /= (1 << 7);
+            MyRealPWDOWN = MyRAWPWDOWN;
+            MyRealPWDOWN /= (1 << 7);
+
+            // scaling
+            MyTOFSumAvgUP_ns = MyTOFSumAvgUP / 1e-9;
+            MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
+            MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
+            // printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+            fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+            printf("Appended: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+            fflush(stdout);
         }
 
         /* STEP 5 - Clear interrupt flag, error flag & frontend status
          * flag register by writing code to SHR_EXC */
         Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
-        My_INTN_State = 1;
-
     } // End of Post Processing
 }
 
@@ -492,30 +388,16 @@ int main()
     fflush(stdout);
 
     spi_init();
-    configureISR();
     Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
     while (1)
     {
         printf("while main!\n");
         fflush(stdout);
-        sleep(1);
-        /* USER CODE END WHILE */
+        sleep(2);
 
-        /* USER CODE BEGIN 3 */
-
-        My_Loop_Pass_Counter += 1; // counts every loop
-
-        //	  printf("%02d:%02d:%02d\n", currTime.Hours, currTime.Minutes, currTime.Seconds);
-
-        if ((My_INTN_State == 0) && (My_Chip_initialized == 1))
+        if ((My_Chip_initialized == 1))
         {
-            printf("(My_INTN_State == 0) && (My_Chip_initialized == 1)\n");
-            fflush(stdout);
-            // *** debug - read the watchdog to make sure it is off
-            watchdog_value = Read_Dword(RC_RAA_RD_RAM, SRR_MSC_STF) & (1 << 15);
-
-            SRR_TS_TIME_content = 3;
-            printf("SRR_TS_TIME_content%d\n", SRR_TS_TIME_content);
+            printf("(My_Chip_initialized == 1)\n");
             fflush(stdout);
 
             My_Time_Conversion_Mode();
