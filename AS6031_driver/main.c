@@ -15,6 +15,10 @@
 #define INTERRUPT_GPIO_PIN 23
 #define CHIPNAME "gpiochip0"
 
+float velocity = 0;
+float speedOfSoundInWaterMps = 1480.0;
+float lenSensorInM = 0.06456;
+
 // volatile bool My_INTN_State = false;
 volatile uint8_t My_INTN_State = 1; /* low active */
 
@@ -356,7 +360,11 @@ void My_Time_Conversion_Mode(void)
         MyTOFSumAvgUP_ns = MyTOFSumAvgUP / 1e-9;
         MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
         MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
+
+        velocity = ((abs(MyDiffTOFSumAvg_ps) * 1E-9) * (speedOfSoundInWaterMps**2)) / (2 * lenSensorInM)
         // printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+        printf("velocity%f\n", velocity);
+        fflush(stdout);
         fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
         printf("Appended: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
         fflush(stdout);
