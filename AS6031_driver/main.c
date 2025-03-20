@@ -191,7 +191,8 @@ void writeConfig(void)
     TOF_HIT_NO = CFG_Registers[0xA];
     TOF_HIT_NO &= TOF_HIT_NO_mask;
     TOF_HIT_NO >>= 8;
-
+    Write_Opcode(RC_BM_REQ); // Bus Master Request 
+    Write_Opcode(RC_MCT_OFF); 
     // Configuration Register
     Write_Register_Auto_Incr(RC_RAA_WR_RAM, 0xC0, CFG_Registers, 0xCF);
 
@@ -202,6 +203,9 @@ void writeConfig(void)
     Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_U, 0x0000004B);     // Zero Cross Detection First Hit Level Up
     //    Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_D,         0x00000087);  //Zero Cross Detection First Hit Level Down
     Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_D, 0x0000004B); // Zero Cross Detection First Hit Level Down
+    Write_Opcode(RC_MCT_ON);
+    Write_Opcode(RC_IF_CLR);
+    Write_Opcode(RC_BM_RLS); // Bus Master Release 
 
     return;
 }
@@ -293,8 +297,6 @@ void My_Time_Conversion_Mode(void)
     printf("My_Time_Conversion_Mode\n");
     fflush(stdout);
 
-    printf("My_Time_Conversion_Mode\n");
-    fflush(stdout);
 
     FILE *file = fopen("data.csv", "a");
     if (file == NULL) {
@@ -314,11 +316,6 @@ void My_Time_Conversion_Mode(void)
     /* STEP 2 - Read SRR_ERR_FLAG to check if any error
      *  occurred during last measurement cycle */
     SRR_ERR_FLAG_content = Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG);
-    /* STEP 3 - Read SRR_FEP_STF to check which
-     * measurement has been updated in last measure cycle */
-    SRR_FEP_STF_content = Read_Dword(RC_RAA_RD_RAM, SRR_FEP_STF);
-    printf("SRR_ERR_FLAG_content%d SRR_FEP_STF_content%d\n", SRR_ERR_FLAG_content, SRR_FEP_STF_content);
-    fflush(stdout);
 
     if (SRR_ERR_FLAG_content > 0)
     {
@@ -536,7 +533,8 @@ int main()
             My_Chip_config_2 = 0;
             My_Chip_config_3 = 0;
 
-            Put_UFC_Into_Idle();
+            //Put_UFC_Into_Idle();
+
             My_Chip_idle_state = 1;
 
             if (My_New_Configuration != 99)
@@ -548,11 +546,11 @@ int main()
                 My_Chip_config_2 = 1;
 
                 writeConfig();
-
+                
                 My_Set_FHL_mV = Read_Dword(RC_RAA_RD_RAM, SHR_ZCD_FHL_U);
                 My_Set_FHL_mV *= 0.88;
 
-                Write_Opcode(RC_MCT_ON); // RC_MCT_ON
+                //Write_Opcode(RC_MCT_ON); // RC_MCT_ON
                 // Write_Opcode(RC_IF_CLR);
                 My_Chip_idle_state = 0;
                 My_Init_State();
@@ -561,13 +559,13 @@ int main()
 
         // With any ERROR
         // Initialisation of DUT will be cleared
-        if (Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG))
-        {
-            printf("Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG)\n");
-            fflush(stdout);
-            My_Chip_initialized = 0;
-            My_Init_State();
-        }
+        // if (Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG))
+        // {
+        //     printf("Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG)\n");
+        //     fflush(stdout);
+        //     My_Chip_initialized = 0;
+        //     My_Init_State();
+        // }
 
     } // End of while loop
 }
