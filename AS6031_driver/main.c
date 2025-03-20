@@ -310,6 +310,7 @@ void My_Time_Conversion_Mode(void)
         /* Chip has to be reinitialized */
         My_Chip_initialized = 0;
         My_Chip_idle_state = 0;
+        My_New_Configuration = 1;
         /* Skipping Post Processing */
     }
     else
