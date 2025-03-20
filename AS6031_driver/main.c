@@ -384,6 +384,8 @@ int main()
     spi_init();
     Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
     configureISR();
+
+    sleep (1);
     while (1)
     {
         printf("while main!\n");
@@ -391,7 +393,7 @@ int main()
         /* USER CODE END WHILE */
 
         /* USER CODE BEGIN 3 */
-
+        sleep (1);
         My_Loop_Pass_Counter += 1; // counts every loop
 
         //	  printf("%02d:%02d:%02d\n", currTime.Hours, currTime.Minutes, currTime.Seconds);
