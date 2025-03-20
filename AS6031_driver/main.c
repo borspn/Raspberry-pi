@@ -494,7 +494,7 @@ int main()
         printf("My_INTN_State%d\n", My_INTN_State);
         printf("My_Chip_initialized%d\n", My_Chip_initialized);
         fflush(stdout);
-        if ((My_Chip_initialized == 1))
+        if ((My_INTN_State == 0) && (My_Chip_initialized == 1))
         {
             printf("(My_INTN_State == 0) && (My_Chip_initialized == 1)\n");
             fflush(stdout);
