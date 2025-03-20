@@ -298,7 +298,7 @@ void My_Time_Conversion_Mode(void)
     printf("SRR_ERR_FLAG_content%d\n", SRR_ERR_FLAG_content);
     fflush(stdout);
 
-    if (SRR_ERR_FLAG_content > 2)
+    if (SRR_ERR_FLAG_content > 0)
     {
         printf("SRR_ERR_FLAG_content > 0\n");
         fflush(stdout);
