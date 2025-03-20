@@ -180,7 +180,7 @@ void writeConfig(void)
         0x94A0C46C, // [0xCC] CR_TRIM1
         0x401100C4, // [0xCD] CR_TRIM2
         0x00A7400F, // [0xCE] CR_TRIM3
-        0x00000001, // [0xD0] SHR_TOF_RATE
+        0x00000000, // [0xD0] SHR_TOF_RATE
         0x000015E0, // [0xD1] SHR_USM_RLS_DLY_U
         0x000015E0, // [0xD2] SHR_USM_RLS_DLY_D
         0x0000004B, // [0xDA] SHR_ZCD_FHL_U
@@ -197,7 +197,7 @@ void writeConfig(void)
     Write_Register_Auto_Incr(RC_RAA_WR_RAM, 0xC0, CFG_Registers, 0xCF);
 
     // System Handling Register
-    Write_Dword(RC_RAA_WR_RAM, SHR_TOF_RATE, 0x00000001);      // TOF RATE Lvl
+    Write_Dword(RC_RAA_WR_RAM, SHR_TOF_RATE, 0x00000000);      // TOF RATE Lvl
     Write_Dword(RC_RAA_WR_RAM, SHR_USM_RLS_DLY_U, 0x000015E0); // Multi-hit Start Delay Up
     Write_Dword(RC_RAA_WR_RAM, SHR_USM_RLS_DLY_D, 0x000015E0); // Multi-hit Start Delay Down
     Write_Dword(RC_RAA_WR_RAM, SHR_ZCD_FHL_U, 0x0000004B);     // Zero Cross Detection First Hit Level Up
