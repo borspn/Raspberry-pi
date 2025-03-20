@@ -155,7 +155,7 @@ void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword
  
   /* 2.b Transmit register address incrementally */
   for (int i = from_addr; i <= to_addr; i++) {
-    printf("i: %x\n", dword_array);
+    printf("i: %d\n", *dword_array);
     temp_u32 = *dword_array;
     spiTX[0] = temp_u32>>24;
     spiTX[1] = temp_u32>>16;
