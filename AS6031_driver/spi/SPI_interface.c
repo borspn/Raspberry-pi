@@ -149,7 +149,7 @@ void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword
 //  /* to start at expected index */
 //  dword_array += from_addr; 
   
-
+   PUT_SSN_LOW;
   /* 2.a Transmit register address */
   spiWrite(spi_handle, spiTX, 2); 
  
@@ -165,4 +165,5 @@ void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword
 
     dword_array++;
   }
+  PUT_SSN_HIGH;
 }
