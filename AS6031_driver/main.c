@@ -334,8 +334,8 @@ void My_Time_Conversion_Mode(void)
         Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask));
         SRR_ERR_FLAG_content = Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG);
     }
-    else
-    {
+    //else
+    //{
         printf("!SRR_ERR_FLAG_content > 0\n");
         fflush(stdout);
         // Post Processing without any Error
@@ -464,10 +464,11 @@ void My_Time_Conversion_Mode(void)
 
         /* STEP 5 - Clear interrupt flag, error flag & frontend status
          * flag register by writing code to SHR_EXC */
-        Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
-        My_INTN_State = 1;
+       
 
-    } // End of Post Processing
+   // } // End of Post Processing
+    Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
+    My_INTN_State = 1;
 }
 
 int main()
