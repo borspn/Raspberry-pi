@@ -317,6 +317,8 @@ void My_Time_Conversion_Mode(void)
      *  occurred during last measurement cycle */
     SRR_ERR_FLAG_content = Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG);
 
+    printf("SRR_ERR_FLAG_content%d\n", SRR_ERR_FLAG_content);  
+    fflush(stdout);
     while (SRR_ERR_FLAG_content > 0)
     {
         printf("SRR_ERR_FLAG_content > 0\n");
