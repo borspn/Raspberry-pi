@@ -396,8 +396,7 @@ void My_Time_Conversion_Mode(void)
                 }
             }
 
-            if (SRR_FEP_STF_content & (US_TOF_UPD_mask | US_D_UPD_mask | US_U_UPD_mask))
-            {
+            
                 /* Updating TOF Values */
                 MyTOFSumAvgUP = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_U) / TOF_HIT_NO;
                 MyTOFSumAvgDOWN = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_D) / TOF_HIT_NO;
@@ -437,7 +436,6 @@ void My_Time_Conversion_Mode(void)
                 fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
                 printf("Appended: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
                 fflush(stdout);
-            }
 
         // determine min/max value for debugging Cycle B
         if (SRR_TS_TIME_content > My_Max_Value_B)
