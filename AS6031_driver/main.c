@@ -329,8 +329,8 @@ void My_Time_Conversion_Mode(void)
         My_ERROR_Counter++;
 
         /* Chip has to be reinitialized */
-        My_Chip_initialized = 0;
-        My_Chip_idle_state = 0;
+        //My_Chip_initialized = 0;
+        //My_Chip_idle_state = 0;
         /* Skipping Post Processing
          * Jump to Step 5 */
         Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask));
