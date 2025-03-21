@@ -361,9 +361,7 @@ void My_Time_Conversion_Mode(void)
          * out of the frontend data buffer */
 
         // Post Processing Cycle A
-        if (SRR_FEP_STF_content & (US_AMC_UPD_mask | US_AM_UPD_mask | US_TOF_EDGE_mask |
-                                   US_TOF_UPD_mask | US_D_UPD_mask | US_U_UPD_mask))
-        {
+        
             My_Cycle_A_Counter += 1; // counts every call
 
             if (SRR_FEP_STF_content & (US_AMC_UPD_mask))
@@ -440,7 +438,6 @@ void My_Time_Conversion_Mode(void)
                 printf("Appended: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
                 fflush(stdout);
             }
-        }
 
         // determine min/max value for debugging Cycle B
         if (SRR_TS_TIME_content > My_Max_Value_B)
