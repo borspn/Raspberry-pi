@@ -317,7 +317,7 @@ void My_Time_Conversion_Mode(void)
      *  occurred during last measurement cycle */
     SRR_ERR_FLAG_content = Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG);
 
-    if (SRR_ERR_FLAG_content > 0)
+    while (SRR_ERR_FLAG_content > 0)
     {
         printf("SRR_ERR_FLAG_content > 0\n");
         fflush(stdout);
@@ -331,6 +331,8 @@ void My_Time_Conversion_Mode(void)
         My_Chip_idle_state = 0;
         /* Skipping Post Processing
          * Jump to Step 5 */
+        Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask));
+        SRR_ERR_FLAG_content = Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG);
     }
     else
     {
