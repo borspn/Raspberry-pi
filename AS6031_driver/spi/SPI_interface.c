@@ -87,9 +87,9 @@ void spi_close()
  */
 void Write_Opcode(char one_byte)
 {
-    gpiod_line_set_value(cs_line, 0);
+    PUT_SSN_LOW;
     write(spi_handle, &one_byte, 1); // Send opcode
-    gpiod_line_set_value(cs_line, 1);
+    PUT_SSN_HIGH;
 }
 
 /**
@@ -108,10 +108,10 @@ void Write_Dword(char opcode, uint8_t address, uint32_t dword)
     spiTX[4] = temp_u32 >> 8;
     spiTX[5] = temp_u32;
 
-    gpiod_line_set_value(cs_line, 0);
+    PUT_SSN_LOW;
     /* 2. Transmit register address */
     write(spi_handle, spiTX, 6);
-    gpiod_line_set_value(cs_line, 1);
+    PUT_SSN_HIGH;
 }
 
 /**
@@ -126,9 +126,9 @@ void Write_Byte2(char opcode, uint16_t address, uint8_t byte)
     spiTX[2] = address & 0xFF;
     spiTX[3] = byte;
 
-    gpiod_line_set_value(cs_line, 0);
+    PUT_SSN_LOW;
     write(spi_handle, spiTX, 4);
-    gpiod_line_set_value(cs_line, 1);
+    PUT_SSN_HIGH;
 }
 
 uint32_t Read_Dword(char rd_opcode, uint8_t address)
@@ -139,10 +139,10 @@ uint32_t Read_Dword(char rd_opcode, uint8_t address)
 
     spiTX[0] = rd_opcode;
     spiTX[1] = address;
-    gpiod_line_set_value(cs_line, 0);
+    PUT_SSN_LOW;
     write(spi_handle, spiTX, 2); // Send opcode/address, receive data
     read(spi_handle, spiRX, 4);
-    gpiod_line_set_value(cs_line, 1);
+    PUT_SSN_HIGH;
     temp_u32 = (spiRX[0] << 24) + (spiRX[1] << 16) + (spiRX[2] << 8) + (spiRX[3]);
 
     return temp_u32;
@@ -173,9 +173,9 @@ uint32_t Read_Dword_Bits(char rd_opcode, uint8_t address, uint8_t msbit, uint8_t
 void Write_Opcode2(char byte1, char byte2)
 {
     char spiTX[2] = {byte1, byte2};
-    gpiod_line_set_value(cs_line, 0);
+    PUT_SSN_LOW;
     write(spi_handle, spiTX, 2);
-    gpiod_line_set_value(cs_line, 1);
+    PUT_SSN_HIGH;
 }
 
 void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword_array, int to_addr)
@@ -186,7 +186,7 @@ void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword
     spiTX[0] = opcode;
     spiTX[1] = from_addr;
 
-    gpiod_line_set_value(cs_line, 0);
+    PUT_SSN_LOW;
     /* 2.a Transmit register address */
     write(spi_handle, spiTX, 2);
 
@@ -203,5 +203,5 @@ void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword
 
         dword_array++;
     }
-    gpiod_line_set_value(cs_line, 1);
+    PUT_SSN_HIGH;
 }

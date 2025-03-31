@@ -10,8 +10,8 @@
 
 #define LOW 0
 #define HIGH 1
-#define PUT_SSN_LOW gpioWrite(CS_GPIO, LOW)
-#define PUT_SSN_HIGH gpioWrite(CS_GPIO, HIGH)
+#define PUT_SSN_LOW gpiod_line_set_value(cs_line, LOW);
+#define PUT_SSN_HIGH gpiod_line_set_value(cs_line, HIGH);
 
 extern int spi_handle;
 extern struct gpiod_chip *chip;
