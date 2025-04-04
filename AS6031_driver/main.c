@@ -329,7 +329,7 @@ void My_Time_Conversion_Mode(void)
         /* STEP - read the measurement results
          * out of the frontend data buffer */
 
-        if (SRR_TS_TIME_content > 1)
+        if (1)
         {
             printf("SRR_TS_TIME_content > 1\n");
             fflush(stdout);
