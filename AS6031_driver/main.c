@@ -299,8 +299,6 @@ void My_Time_Conversion_Mode(void)
     /* STEP - Read SRR_ERR_FLAG to check if any error
      *  occurred during last measurement cycle */
     SRR_ERR_FLAG_content = Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG);
-    printf("SRR_ERR_FLAG_content%d\n", SRR_ERR_FLAG_content);
-    fflush(stdout);
 
     if (SRR_ERR_FLAG_content > 0)
     {
@@ -323,126 +321,82 @@ void My_Time_Conversion_Mode(void)
     }
     else
     {
-        printf("!SRR_ERR_FLAG_content > 0\n");
-        fflush(stdout);
 
         /* STEP - read the measurement results
          * out of the frontend data buffer */
 
-        if (1)
+        /* STEP 4 - read the measurement results
+         * out of the frontend data buffer */
+
+        // Post Processing Cycle A
+
+        My_Cycle_A_Counter += 1; // counts every call
+
+
+        if (SRR_FEP_STF_content & (US_AM_UPD_mask))
         {
-            printf("SRR_TS_TIME_content > 1\n");
-            fflush(stdout);
-            // determine min/max value for debugging Cycle A
-            if (SRR_TS_TIME_content > My_Max_Value_A)
+            /* If amplitude calibration values = ZERO
+             * Reloading amplitude calibration values */
+            if (MyRAWAMCVH == 0 || MyRAWAMCVL == 0)
             {
-                My_Max_Value_A = SRR_TS_TIME_content;
-            }
-            if (SRR_TS_TIME_content < My_Min_Value_A)
-            {
-                My_Min_Value_A = SRR_TS_TIME_content;
-            }
-
-            /* STEP 4 - read the measurement results
-             * out of the frontend data buffer */
-
-            // Post Processing Cycle A
-
-            My_Cycle_A_Counter += 1; // counts every call
-
-            if (SRR_FEP_STF_content & (US_AMC_UPD_mask))
-            {
-                /* Updating of Ultrasonic amplitude calibration values */
                 MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
                 MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
                 printf("MyRAWAMCVH%d MyRAWAMCVL%d\n", MyRAWAMCVH, MyRAWAMCVL);
                 fflush(stdout);
             }
 
-            if (SRR_FEP_STF_content & (US_AM_UPD_mask))
+            /* If amplitude calibration values are available
+             * Updating amplitude values */
+            if (MyRAWAMCVH != 0 && MyRAWAMCVL != 0)
             {
-                /* If amplitude calibration values = ZERO
-                 * Reloading amplitude calibration values */
-                if (MyRAWAMCVH == 0 || MyRAWAMCVL == 0)
-                {
-                    MyRAWAMCVH = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VH);
-                    MyRAWAMCVL = Read_Dword(RC_RAA_RD_RAM, FDB_US_AMC_VL);
-                    printf("MyRAWAMCVH%d MyRAWAMCVL%d\n", MyRAWAMCVH, MyRAWAMCVL);
-                    fflush(stdout);
-                }
-
-                /* If amplitude calibration values are available
-                 * Updating amplitude values */
-                if (MyRAWAMCVH != 0 && MyRAWAMCVL != 0)
-                {
-                    MyRealAMUP = Calc_Amplitude(FDB_US_AM_U, MyRAWAMCVH, MyRAWAMCVL);
-                    MyRealAMDOWN = Calc_Amplitude(FDB_US_AM_D, MyRAWAMCVH, MyRAWAMCVL);
-                    printf("MyRealAMUP%f MyRealAMDOWN%f\n", MyRealAMUP, MyRealAMDOWN);
-                    fflush(stdout);
-                }
-            }
-
-            /* Updating TOF Values */
-            MyTOFSumAvgUP = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_U) / TOF_HIT_NO;
-            MyTOFSumAvgDOWN = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_D) / TOF_HIT_NO;
-            printf("MyTOFSumAvgUP%f MyTOFSumAvgDOWN%f\n", MyTOFSumAvgUP, MyTOFSumAvgDOWN);
-            fflush(stdout);
-
-            if (MyTOFSumAvgUP == 0)
-            {
-                My_UP_zero++;
-            }
-            if (MyTOFSumAvgDOWN == 0)
-            {
-                My_DOWN_zero++;
-            }
-
-            /* Updating Pulse Width Ratio */
-            MyRAWPWUP = Read_Dword(RC_RAA_RD_RAM, FDB_US_PW_U);
-            MyRAWPWDOWN = Read_Dword(RC_RAA_RD_RAM, FDB_US_PW_D);
-            printf("MyRAWPWUP%d MyRAWPWDOWN%d\n", MyRAWPWUP, MyRAWPWDOWN);
-            fflush(stdout);
-
-            // post processing and calculation
-            MyDiffTOFSumAvg = (MyTOFSumAvgDOWN - MyTOFSumAvgUP);
-            printf("MyDiffTOFSumAvg%f\n", MyDiffTOFSumAvg);
-            fflush(stdout);
-
-            MyRealPWUP = MyRAWPWUP;
-            MyRealPWUP /= (1 << 7);
-            MyRealPWDOWN = MyRAWPWDOWN;
-            MyRealPWDOWN /= (1 << 7);
-
-            // scaling
-            MyTOFSumAvgUP_ns = MyTOFSumAvgUP / 1e-9;
-            MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
-            MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
-            // printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-            fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-            printf("Appended: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-            fflush(stdout);
-
-            // determine min/max value for debugging Cycle B
-            if (SRR_TS_TIME_content > My_Max_Value_B)
-            {
-                My_Max_Value_B = SRR_TS_TIME_content;
-            }
-            if (SRR_TS_TIME_content < My_Min_Value_B)
-            {
-                My_Min_Value_B = SRR_TS_TIME_content;
-            }
-
-            // Post Processing Cycle B
-            if (SRR_FEP_STF_content & (TM_ST_mask | TM_MODE_mask | TM_UPD_mask | HCC_UPD_mask))
-            {
-                My_Cycle_B_Counter += 1; // counts every call
+                MyRealAMUP = Calc_Amplitude(FDB_US_AM_U, MyRAWAMCVH, MyRAWAMCVL);
+                MyRealAMDOWN = Calc_Amplitude(FDB_US_AM_D, MyRAWAMCVH, MyRAWAMCVL);
+                printf("MyRealAMUP%f MyRealAMDOWN%f\n", MyRealAMUP, MyRealAMDOWN);
+                fflush(stdout);
             }
         }
-        else
+
+        /* Updating TOF Values */
+        MyTOFSumAvgUP = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_U) / TOF_HIT_NO;
+        MyTOFSumAvgDOWN = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_D) / TOF_HIT_NO;
+        printf("MyTOFSumAvgUP%f MyTOFSumAvgDOWN%f\n", MyTOFSumAvgUP, MyTOFSumAvgDOWN);
+        fflush(stdout);
+
+        if (MyTOFSumAvgUP == 0)
         {
-            // there is not enough time
-            My_Too_Less_Time += 1;
+            My_UP_zero++;
         }
+        if (MyTOFSumAvgDOWN == 0)
+        {
+            My_DOWN_zero++;
+        }
+
+        /* Updating Pulse Width Ratio */
+        MyRAWPWUP = Read_Dword(RC_RAA_RD_RAM, FDB_US_PW_U);
+        MyRAWPWDOWN = Read_Dword(RC_RAA_RD_RAM, FDB_US_PW_D);
+        printf("MyRAWPWUP%d MyRAWPWDOWN%d\n", MyRAWPWUP, MyRAWPWDOWN);
+        fflush(stdout);
+
+        // post processing and calculation
+        MyDiffTOFSumAvg = (MyTOFSumAvgDOWN - MyTOFSumAvgUP);
+        printf("MyDiffTOFSumAvg%f\n", MyDiffTOFSumAvg);
+        fflush(stdout);
+
+        MyRealPWUP = MyRAWPWUP;
+        MyRealPWUP /= (1 << 7);
+        MyRealPWDOWN = MyRAWPWDOWN;
+        MyRealPWDOWN /= (1 << 7);
+
+        // scaling
+        MyTOFSumAvgUP_ns = MyTOFSumAvgUP / 1e-9;
+        MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
+        MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
+        // printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+        fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+        printf("Appended: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+        fflush(stdout);
+        fclose(file);
+
     }
     /* STEP 5 - Clear interrupt flag, error flag & frontend status
      * flag register by writing code to SHR_EXC */
@@ -498,7 +452,7 @@ int main()
             My_Chip_config_2 = 0;
             My_Chip_config_3 = 0;
 
-            //Put_UFC_Into_Idle();
+            // Put_UFC_Into_Idle();
             My_Chip_idle_state = 1;
 
             if (My_New_Configuration != 99)
