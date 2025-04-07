@@ -19,9 +19,9 @@
 #define INTERRUPT_GPIO_PIN 23
 #define CHIPNAME "gpiochip0"
 
-#define SPEED_OF_SOUND_WATER 1480.0;
-#define LEN_OF_SENS 0.06456;
-#define CROSS_AREA 0.000501653;
+#define SPEED_OF_SOUND_WATER 1480.0
+#define LEN_OF_SENS 0.06456
+#define CROSS_AREA 0.000501653
 #define K_FACT 1.008
 #define VFR_CONSTANT 15850.32
 
@@ -438,7 +438,7 @@ void Process_TOF(void)
         
         printf("TOF data: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
         printf("Velocity: %f\n", velocity);
-        printf("Volumetric Flow Rate: %f\n", volumetricFlowRate);
+        printf("Volumetric Flow Rate: %f\n", volumetricFlowRate);printf("Velocity: %f\n", velocity);
         fflush(stdout);
 
 #ifdef STORE_DATA_IN_FILE
