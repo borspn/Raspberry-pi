@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <math.h>
 #include "SPI_interface.h"
 #include "user_GP30_parameter.h"
 #include "user_UFC_cmd.h"
@@ -18,11 +19,14 @@
 #define INTERRUPT_GPIO_PIN 23
 #define CHIPNAME "gpiochip0"
 
-#define VELOCITY = 0;
-#define SPEED_OF_SOUND_WATER = 1480.0;
-#define LEN_OF_SENS = 0.06456;
-#define K_FACT = 1.008
+#define SPEED_OF_SOUND_WATER 1480.0;
+#define LEN_OF_SENS 0.06456;
+#define CROSS_AREA 0.000501653;
+#define K_FACT 1.008
+#define VFR_CONSTANT 15850.32
 
+float velocity = 0;
+float volumetricFlowRate = 0;
 volatile uint32_t My_ERROR_Counter = 0;
 
 volatile uint8_t My_New_Configuration = 1; // 1 = TDC-GP30 or AS6031 dependent on definition
@@ -429,7 +433,12 @@ void Process_TOF(void)
         MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
         MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
 
+        velocity = (abs(MyDiffTOFSumAvg_ps * pow(10, -12)) * (SPEED_OF_SOUND_WATER * SPEED_OF_SOUND_WATER)) / (2 * LEN_OF_SENS);
+        volumetricFlowRate = VFR_CONSTANT * K_FACT * velocity * CROSS_AREA;
+        
         printf("TOF data: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+        printf("Velocity: %f\n", velocity);
+        printf("Volumetric Flow Rate: %f\n", volumetricFlowRate);
         fflush(stdout);
 
 #ifdef STORE_DATA_IN_FILE
