@@ -11,41 +11,25 @@
 #include "user_UFC_cmd.h"
 #include "user_AS6031_parameter.h"
 
+#define STORE_DATA_IN_FILE 0 // 0 = no, 1 = yes
+#define MEASURMENT_DELAY_IN_S 2
+
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
 #define CHIPNAME "gpiochip0"
 
-float velocity = 0;
-float speedOfSoundInWaterMps = 1480.0;
-float lenSensorInM = 0.06456;
-
-// volatile bool My_INTN_State = false;
-volatile uint8_t My_INTN_State = 1; /* low active */
-
-// *** debug - for watchdog reading
-volatile uint32_t watchdog_value = 0;
-
-volatile uint32_t My_INTN_Counter = 0;
-volatile uint32_t My_Cycle_A_Counter = 0;
-volatile uint32_t My_Cycle_B_Counter = 0;
-volatile uint32_t My_Loop_Pass_Counter = 0;
+#define VELOCITY = 0;
+#define SPEED_OF_SOUND_WATER = 1480.0;
+#define LEN_OF_SENS = 0.06456;
+#define K_FACT = 1.008
 
 volatile uint32_t My_ERROR_Counter = 0;
-volatile uint32_t My_UP_zero = 0;
-volatile uint32_t My_DOWN_zero = 0;
-
-volatile uint32_t My_Min_Value_A = 0xFFFFFFFF, My_Max_Value_A = 0,
-                  My_Min_Value_B = 0xFFFFFFFF, My_Max_Value_B = 0;
-volatile uint32_t My_Too_Less_Time = 0;
 
 volatile uint8_t My_New_Configuration = 1; // 1 = TDC-GP30 or AS6031 dependent on definition
 volatile uint8_t My_New_FHL = 0;
 volatile float My_New_FHL_mV = 0;
 volatile float My_Set_FHL_mV = 0;
 
-volatile uint8_t MyMode = 1; /* default */
-
-// Post Processing - Time Conversion Mode (MyMode = 1)
 uint32_t MyRAWValueUP;
 uint32_t MyRAWValueDOWN;
 uint32_t MyRAWAMCVH;
@@ -60,19 +44,13 @@ float MyRealAMUP;
 float MyRealAMDOWN;
 float MyRealPWUP;
 float MyRealPWDOWN;
-float MyRealHSClk;
-
-// Scaling
-float MyRealHSClk_ns;
 float MyTOFSumAvgUP_ns;
 float MyTOFSumAvgDOWN_ns;
 float MyDiffTOFSumAvg_ps;
 
 // For Debugging
 volatile uint8_t My_Chip_initialized = 0;
-volatile uint8_t My_Chip_config_1 = 0;
-volatile uint8_t My_Chip_config_2 = 0;
-volatile uint8_t My_Chip_config_3 = 0;
+
 volatile uint8_t My_Chip_idle_state = 0;
 
 // Firmware Code: <AS6031_AS6040_A1.F1.11.01_DIF_over_PI_sim.hex>
@@ -162,6 +140,30 @@ float Two_s_Complement_Conversion(uint32_t raw_number, int bit, float mult_facto
     return number;
 }
 
+/**
+ * @brief Configures and writes settings to the AS6031 device.
+ *
+ * This function sets up the configuration registers and system handling registers
+ * for the AS6031 device. It uses predefined configuration values and writes them
+ * to the device using specific opcodes and register write functions.
+ *
+ * @details
+ * - The function defines a high-speed clock (HS_CLOCK) of 4 MHz.
+ * - Configuration registers (CFG_Registers) are initialized with specific values
+ *   for the device's operation, including trimming and timing parameters.
+ * - The TOF_HIT_NO value is extracted and processed using a mask and shift operation.
+ * - The function writes the configuration registers to the device using
+ *   `Write_Register_Auto_Incr`.
+ * - System handling registers are written individually using `Write_Dword` for
+ *   parameters such as TOF rate, multi-hit start delays, and zero-cross detection levels.
+ * - Several opcodes are sent to the device to manage its state, including bus master
+ *   request/release and interrupt flag clearing.
+ *
+ * @note Adjustments to the TRIM2 register value are documented in the comments.
+ * @note The function ensures proper sequencing of operations to configure the device.
+ *
+ * @return None
+ */
 void writeConfig(void)
 {
 #undef HS_CLOCK
@@ -213,6 +215,20 @@ void writeConfig(void)
     return;
 }
 
+/**
+ * @brief Calculates the Time of Flight (TOF) based on a given memory address.
+ *
+ * This function reads a raw 32-bit value from the specified TOF address in memory,
+ * performs a two's complement conversion, and calculates the corresponding
+ * floating-point Time of Flight value.
+ *
+ * @param TOF_address The memory address from which the raw TOF value is read.
+ * @return The calculated Time of Flight as a floating-point value.
+ *
+ * @note The function relies on the `Read_Dword` function to fetch the raw value
+ *       and the `Two_s_Complement_Conversion` function to perform the conversion.
+ * @note The `T_REF` constant is used during the two's complement conversion.
+ */
 float Calc_TimeOfFlight(uint32_t TOF_address)
 {
     /* local parameter */
@@ -226,29 +242,35 @@ float Calc_TimeOfFlight(uint32_t TOF_address)
     return FLOATValue;
 }
 
+/**
+ * @brief Initializes the state variables for the system.
+ *
+ * This function resets the error counter, clears any new configuration flags,
+ * and marks the chip as initialized. It is typically called during the
+ * initialization phase of the system to ensure all relevant state variables
+ * are set to their default values.
+ *
+ * @note Ensure this function is called before any other operations that
+ * depend on the initialized state of the chip.
+ */
 void My_Init_State(void)
 {
-    /* reset counter */
-    My_INTN_Counter = 0;
-    My_Cycle_A_Counter = 0;
-    My_Cycle_B_Counter = 0;
-    My_Loop_Pass_Counter = 0;
     My_ERROR_Counter = 0;
-    My_UP_zero = 0;
-    My_DOWN_zero = 0;
-    My_Too_Less_Time = 0;
-
-    /* expand range */
-    My_Min_Value_A = 0xFFFFFFFF;
-    My_Max_Value_A = 0;
-    My_Min_Value_B = 0xFFFFFFFF;
-    My_Max_Value_B = 0;
-
     My_New_Configuration = 0;
-
     My_Chip_initialized = 1;
 }
 
+/**
+ * @brief Calculates the amplitude based on raw data and calibration parameters.
+ *
+ * This function reads a raw value from a specified memory address and calculates
+ * the amplitude using the provided calibration parameters (AMC_VH and AMC_VL).
+ *
+ * @param AM_address The memory address to read the raw value from.
+ * @param AMC_VH The high calibration value.
+ * @param AMC_VL The low calibration value.
+ * @return The calculated amplitude as a floating-point value.
+ */
 float Calc_Amplitude(uint32_t AM_address, uint32_t AMC_VH, uint32_t AMC_VL)
 {
     /* local parameter */
@@ -266,19 +288,63 @@ float Calc_Amplitude(uint32_t AM_address, uint32_t AMC_VH, uint32_t AMC_VL)
     return FLOATValue;
 }
 
-void Put_UFC_Into_Idle(void)
+/**
+ * @brief Processes the Time of Flight (TOF) data and performs error handling,
+ *        calibration, and data post-processing.
+ *
+ * This function reads and processes TOF data from a sensor, handles errors,
+ * updates calibration values, calculates TOF and amplitude values, and optionally
+ * stores the processed data in a file. It also clears interrupt and error flags
+ * after processing.
+ *
+ * @note The function behavior can be modified by defining the macro `STORE_DATA_IN_FILE`.
+ *       When defined, the processed data is appended to a file named "data.csv".
+ *
+ * Steps performed:
+ * 1. Reads the SRR_ERR_FLAG to check for errors in the last measurement cycle.
+ * 2. Handles errors by clearing error flags and optionally reinitializing the chip.
+ * 3. Updates amplitude calibration values if required.
+ * 4. Calculates amplitude and TOF values.
+ * 5. Performs post-processing, including scaling and calculating differences.
+ * 6. Optionally writes the processed data to a file.
+ * 7. Clears interrupt, error, and frontend status flags.
+ *
+ * @global_variables
+ * - `SRR_ERR_FLAG_content`: Stores the error flag content.
+ * - `My_ERROR_Counter`: Tracks the number of errors encountered.
+ * - `MyRAWAMCVH`, `MyRAWAMCVL`: Raw amplitude calibration values.
+ * - `MyRealAMUP`, `MyRealAMDOWN`: Calculated amplitude values.
+ * - `MyTOFSumAvgUP`, `MyTOFSumAvgDOWN`: Average TOF values.
+ * - `MyDiffTOFSumAvg`: Difference between TOF averages.
+ * - `MyRAWPWUP`, `MyRAWPWDOWN`: Raw pulse width values.
+ * - `MyRealPWUP`, `MyRealPWDOWN`: Scaled pulse width values.
+ * - `MyTOFSumAvgUP_ns`, `MyTOFSumAvgDOWN_ns`, `MyDiffTOFSumAvg_ps`: Scaled TOF values.
+ *
+ * @dependencies
+ * - `Read_Dword()`: Reads a 32-bit value from the sensor.
+ * - `Write_Dword()`: Writes a 32-bit value to the sensor.
+ * - `Calc_Amplitude()`: Calculates amplitude based on raw values.
+ * - `Calc_TimeOfFlight()`: Calculates TOF based on raw values.
+ *
+ * @file_output
+ * - File: "data.csv" (if `STORE_DATA_IN_FILE` is defined)
+ * - Format: Tab-separated values with columns:
+ *   - `MyTOFSumAvgUP_ns`
+ *   - `MyTOFSumAvgDOWN_ns`
+ *   - `MyDiffTOFSumAvg_ps`
+ *
+ * @error_handling
+ * - If an error is detected in `SRR_ERR_FLAG`, the error is logged, and flags are cleared.
+ * - If the file "data.csv" cannot be opened, an error message is printed, and the function returns.
+ *
+ * @clears_flags
+ * - Clears interrupt, error, and frontend status flags by writing to `SHR_EXC`.
+ */
+void Process_TOF(void)
 {
-    Write_Opcode(RC_SYS_RST);                           // Reset UFC completely
-    usleep(10000);                                      // delay = 20ms?? only firmware data has no configuration data
-    Write_Dword(RC_RAA_WR_RAM, CR_WD_DIS, WD_DIS_CODE); // STEP 1 - Disable Watchdog by writing code to CR_WD_DIS
-    Write_Opcode(RC_MCT_OFF);
-}
-
-void My_Time_Conversion_Mode(void)
-{
-    printf("My_Time_Conversion_Mode\n");
+    printf("Process_TOF\n");
     fflush(stdout);
-
+#ifdef STORE_DATA_IN_FILE
     FILE *file = fopen("data.csv", "a");
     if (file == NULL)
     {
@@ -292,6 +358,7 @@ void My_Time_Conversion_Mode(void)
     {
         fprintf(file, "MyTOFSumAvgUP_ns\tMyTOFSumAvgDOWN_ns\tMyDiffTOFSumAvg_ps\n");
     }
+#endif // STORE_DATA_IN_FILE
     /* Time Conversion Mode */
     /* Cylce A = ~ 370 µs @SPI = 2.5 MHz*/
     /* Cylce B = ~ 160 µs @SPI = 2.5 MHz*/
@@ -304,8 +371,6 @@ void My_Time_Conversion_Mode(void)
     {
         printf("SRR_ERR_FLAG_content%d\n", SRR_ERR_FLAG_content);
         fflush(stdout);
-        printf("SRR_ERR_FLAG_content > 0\n");
-        fflush(stdout);
         // Error Handling with simplified query
         printf("...error!\n");
         fflush(stdout);
@@ -314,25 +379,12 @@ void My_Time_Conversion_Mode(void)
         /* Chip has to be reinitialized */
         // My_Chip_initialized = 0;
         // My_Chip_idle_state = 0;
-        /* Skipping Post Processing
-         * Jump to Step 5 */
+        // Skipping Post Processing
         Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask));
         SRR_ERR_FLAG_content = Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG);
     }
     else
     {
-
-        /* STEP - read the measurement results
-         * out of the frontend data buffer */
-
-        /* STEP 4 - read the measurement results
-         * out of the frontend data buffer */
-
-        // Post Processing Cycle A
-
-        My_Cycle_A_Counter += 1; // counts every call
-
-
         if (SRR_FEP_STF_content & (US_AM_UPD_mask))
         {
             /* If amplitude calibration values = ZERO
@@ -359,28 +411,13 @@ void My_Time_Conversion_Mode(void)
         /* Updating TOF Values */
         MyTOFSumAvgUP = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_U) / TOF_HIT_NO;
         MyTOFSumAvgDOWN = Calc_TimeOfFlight(FDB_US_TOF_ADD_ALL_D) / TOF_HIT_NO;
-        printf("MyTOFSumAvgUP%f MyTOFSumAvgDOWN%f\n", MyTOFSumAvgUP, MyTOFSumAvgDOWN);
-        fflush(stdout);
-
-        if (MyTOFSumAvgUP == 0)
-        {
-            My_UP_zero++;
-        }
-        if (MyTOFSumAvgDOWN == 0)
-        {
-            My_DOWN_zero++;
-        }
 
         /* Updating Pulse Width Ratio */
         MyRAWPWUP = Read_Dword(RC_RAA_RD_RAM, FDB_US_PW_U);
         MyRAWPWDOWN = Read_Dword(RC_RAA_RD_RAM, FDB_US_PW_D);
-        printf("MyRAWPWUP%d MyRAWPWDOWN%d\n", MyRAWPWUP, MyRAWPWDOWN);
-        fflush(stdout);
 
         // post processing and calculation
         MyDiffTOFSumAvg = (MyTOFSumAvgDOWN - MyTOFSumAvgUP);
-        printf("MyDiffTOFSumAvg%f\n", MyDiffTOFSumAvg);
-        fflush(stdout);
 
         MyRealPWUP = MyRAWPWUP;
         MyRealPWUP /= (1 << 7);
@@ -391,17 +428,19 @@ void My_Time_Conversion_Mode(void)
         MyTOFSumAvgUP_ns = MyTOFSumAvgUP / 1e-9;
         MyTOFSumAvgDOWN_ns = MyTOFSumAvgDOWN / 1e-9;
         MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
-        // printf("MyTOFSumAvgUP_ns%f MyTOFSumAvgDOWN_ns%f MyDiffTOFSumAvg_ps%f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-        fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-        printf("Appended: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
-        fflush(stdout);
-        fclose(file);
 
+        printf("TOF data: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+        fflush(stdout);
+
+#ifdef STORE_DATA_IN_FILE
+        fprintf(file, "%.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
+        fclose(file);
+#endif // STORE_DATA_IN_FILE
     }
-    /* STEP 5 - Clear interrupt flag, error flag & frontend status
+    /* Clear interrupt flag, error flag & frontend status
      * flag register by writing code to SHR_EXC */
     Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
-} // End of Post Processing
+}
 
 int main()
 {
@@ -410,18 +449,20 @@ int main()
 
     spi_init();
     Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
+
     while (1)
     {
         printf("while main!\n");
         fflush(stdout);
-        sleep(2);
+
+        sleep(MEASURMENT_DELAY_IN_S);
 
         if ((My_Chip_initialized == 1))
         {
             printf("(My_Chip_initialized == 1)\n");
             fflush(stdout);
 
-            My_Time_Conversion_Mode();
+            Process_TOF();
 
             /* Update Configuration */
             if (My_New_FHL_mV > 0)
@@ -440,7 +481,7 @@ int main()
                 My_Set_FHL_mV = My_New_FHL_mV;
                 My_New_FHL_mV = 0;
             }
-        } // End of (My_INTN_State == true) query
+        }
 
         /* Reload Configuration */
         if (My_New_Configuration > 0)
@@ -448,9 +489,6 @@ int main()
             printf("My_New_Configuration > 0\n");
             fflush(stdout);
             My_Chip_initialized = 0;
-            My_Chip_config_1 = 0;
-            My_Chip_config_2 = 0;
-            My_Chip_config_3 = 0;
 
             // Put_UFC_Into_Idle();
             My_Chip_idle_state = 1;
@@ -459,11 +497,8 @@ int main()
             {
                 printf("My_New_Configuration != 99\n");
                 fflush(stdout);
-                // AS6031_ST_NS
-                // strcpy(My_Configuration, "AS6031_ST_NS");
-                My_Chip_config_2 = 1;
 
-                writeConfig();
+                writeConfig(); // Write Configuration to AS6031
 
                 My_Set_FHL_mV = Read_Dword(RC_RAA_RD_RAM, SHR_ZCD_FHL_U);
                 My_Set_FHL_mV *= 0.88;
@@ -474,16 +509,5 @@ int main()
                 My_Init_State();
             }
         }
-
-        // // With any ERROR
-        // // Initialisation of DUT will be cleared
-        // if (Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG))
-        // {
-        //     printf("Read_Dword(RC_RAA_RD_RAM, SRR_ERR_FLAG)\n");
-        //     fflush(stdout);
-        //     My_Chip_initialized = 0;
-        //     My_Init_State();
-        // }
-
     } // End of while loop
 }

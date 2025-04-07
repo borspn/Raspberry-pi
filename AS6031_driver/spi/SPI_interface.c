@@ -11,10 +11,27 @@
 int spi_handle;
 struct gpiod_chip *chip;
 struct gpiod_line *cs_line;
-struct gpiod_line *irq_line;
+
 /**
- * @brief Initialize SPI communication using libgpiod.
- */
+ * @brief Initializes the SPI interface and configures the necessary GPIO and SPI settings.
+ *
+ * This function performs the following steps:
+ * 1. Opens the GPIO chip using libgpiod.
+ * 2. Retrieves the GPIO line for the Chip Select (CS) pin and configures it as an output.
+ * 3. Opens the SPI device file (e.g., /dev/spidev0.0).
+ * 4. Configures the SPI mode and speed using ioctl system calls.
+ *
+ * If any step fails, the function prints an error message to stderr and terminates the program.
+ *
+ * @note The CS GPIO pin is set to HIGH (inactive) by default after initialization.
+ * @note The SPI mode is set to SPI_MODE_1 by default. Modify the `mode` variable if a different mode is required.
+ * @note The SPI speed is set using the `SPI_SPEED_HZ` macro. Ensure this macro is defined with the desired speed.
+ *
+ * @warning This function exits the program on failure. Ensure proper error handling if integrating into a larger system.
+ *
+ * @dependencies
+ * - Requires the libgpiod library for GPIO operations.
+ * - Requires access to the SPI device file (e.g., /dev/spidev0.0).**/
 void spi_init()
 {
     // Open GPIO chip
@@ -72,18 +89,19 @@ void spi_init()
     printf("SPI initialized using libgpiod!\n");
 }
 
-/**
- * @brief Close SPI and release GPIO resources.
- */
-void spi_close()
-{
-    close(spi_handle);
-    gpiod_chip_close(chip);
-    printf("SPI closed and GPIO released.\n");
-}
 
 /**
- * @brief Write a single opcode byte via SPI.
+ * @brief Sends a single-byte opcode to the SPI device.
+ *
+ * This function writes a single byte (opcode) to the SPI device by
+ * lowering the Slave Select (SSN) line, transmitting the byte, and
+ * then raising the SSN line to complete the transaction.
+ *
+ * @param one_byte The opcode to be sent to the SPI device.
+ *
+ * @note Ensure that the SPI interface is properly initialized before
+ *       calling this function. The macros PUT_SSN_LOW and PUT_SSN_HIGH
+ *       must be defined to control the SSN line.
  */
 void Write_Opcode(char one_byte)
 {
@@ -92,8 +110,21 @@ void Write_Opcode(char one_byte)
     PUT_SSN_HIGH;
 }
 
+
 /**
- * @brief Write one double word (4 bytes).
+ * @brief Writes a 32-bit data word to a specified address using SPI communication.
+ *
+ * This function constructs a 6-byte SPI transmission buffer consisting of an opcode,
+ * an address, and a 32-bit data word. It then transmits the buffer over SPI while
+ * toggling the Slave Select (SSN) line to indicate the start and end of the transaction.
+ *
+ * @param opcode The operation code to be sent as the first byte of the SPI transmission.
+ * @param address The address to which the data word will be written.
+ * @param dword The 32-bit data word to be transmitted.
+ *
+ * @note The function assumes that the SPI handle (`spi_handle`) and macros for controlling
+ *       the SSN line (`PUT_SSN_LOW` and `PUT_SSN_HIGH`) are properly defined and initialized.
+ *       The `write` function is used to transmit the data over SPI.
  */
 void Write_Dword(char opcode, uint8_t address, uint32_t dword)
 {
@@ -115,22 +146,20 @@ void Write_Dword(char opcode, uint8_t address, uint32_t dword)
 }
 
 /**
- * @brief Write one byte with a 16-bit address.
+ * @brief Reads a 32-bit value from a device using SPI communication.
+ *
+ * This function sends a read opcode and an address to the SPI device, 
+ * then reads a 4-byte response and combines it into a 32-bit unsigned integer.
+ *
+ * @param rd_opcode The read opcode to be sent to the SPI device.
+ * @param address The address from which to read data.
+ * @return The 32-bit unsigned integer value read from the SPI device.
+ *
+ * @note This function assumes that the SPI device is configured and 
+ *       the `spi_handle` is properly initialized. It also assumes 
+ *       that the macros `PUT_SSN_LOW` and `PUT_SSN_HIGH` are defined 
+ *       to control the Slave Select (SSN) line.
  */
-void Write_Byte2(char opcode, uint16_t address, uint8_t byte)
-{
-    char spiTX[4];
-
-    spiTX[0] = opcode;
-    spiTX[1] = (address >> 8) & 0xFF;
-    spiTX[2] = address & 0xFF;
-    spiTX[3] = byte;
-
-    PUT_SSN_LOW;
-    write(spi_handle, spiTX, 4);
-    PUT_SSN_HIGH;
-}
-
 uint32_t Read_Dword(char rd_opcode, uint8_t address)
 {
     uint8_t spiTX[2];
@@ -148,27 +177,20 @@ uint32_t Read_Dword(char rd_opcode, uint8_t address)
     return temp_u32;
 }
 
-/**
- * @brief Read specific bits from a double word.
- */
-uint32_t Read_Dword_Bits(char rd_opcode, uint8_t address, uint8_t msbit, uint8_t lsbit)
-{
-    if (msbit > 31)
-        msbit = 31;
-    if (msbit >= 32)
-        msbit = 31;
-    if (lsbit >= 32)
-        lsbit = 31;
-
-    uint32_t address_content = Read_Dword(rd_opcode, address);
-    uint32_t bit_mask = (1U << (msbit - lsbit + 1)) - 1;
-    uint32_t temp_u32 = (address_content >> lsbit) & bit_mask;
-
-    return temp_u32;
-}
 
 /**
- * @brief Write two bytes via SPI.
+ * @brief Sends two bytes via SPI interface.
+ *
+ * This function transmits two bytes over the SPI bus. It ensures that the 
+ * Slave Select (SSN) line is properly toggled to indicate the start and 
+ * end of the SPI communication.
+ *
+ * @param byte1 The first byte to be transmitted.
+ * @param byte2 The second byte to be transmitted.
+ *
+ * @note The function assumes that the SPI handle (spi_handle) is already 
+ *       initialized and that the macros PUT_SSN_LOW and PUT_SSN_HIGH 
+ *       correctly control the SSN line.
  */
 void Write_Opcode2(char byte1, char byte2)
 {
@@ -177,6 +199,24 @@ void Write_Opcode2(char byte1, char byte2)
     write(spi_handle, spiTX, 2);
     PUT_SSN_HIGH;
 }
+
+/**
+ * @brief Writes a sequence of 32-bit values to consecutive registers using SPI with auto-increment.
+ *
+ * This function sends an opcode and a starting register address, followed by a sequence of 32-bit
+ * values to be written to consecutive registers. The SPI chip select signal is managed within the
+ * function to ensure proper communication.
+ *
+ * @param opcode      The opcode to be sent as the first byte of the SPI transaction.
+ * @param from_addr   The starting register address to write to.
+ * @param dword_array Pointer to an array of 32-bit values to be written to the registers.
+ * @param to_addr     The ending register address (inclusive) to write to.
+ *
+ * @note The function assumes that the SPI handle (spi_handle) and the macros PUT_SSN_LOW and
+ *       PUT_SSN_HIGH are properly defined and configured elsewhere in the code.
+ * @note The caller must ensure that the dword_array contains enough elements to cover the range
+ *       from `from_addr` to `to_addr`.
+ */
 
 void Write_Register_Auto_Incr(uint8_t opcode, uint8_t from_addr, uint32_t *dword_array, int to_addr)
 {
