@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <math.h>
 #include "SPI_interface.h"
 #include "user_GP30_parameter.h"
 #include "user_UFC_cmd.h"
