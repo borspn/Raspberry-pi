@@ -466,7 +466,7 @@ int main(int argc, char *argv[])
     float measDelay = DEFAULT_MEAS_DELAY_IN_S;
 
     int opt;
-    while ((opt = getopt(argc, argv, "s:d:")) != -1)
+    while ((opt = getopt(argc, argv, "s:c:d:")) != -1)
     {
         switch (opt)
         {
