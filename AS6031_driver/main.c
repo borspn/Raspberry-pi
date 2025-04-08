@@ -500,7 +500,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("Starting with SPI speed: %d Hz, Measurement delay: %.2f seconds\n", spiSpeed, measDelay);
+    printf("Starting with SPI speed: %d Hz, CS GPIO: %d , Measurement delay: %.2f seconds\n", spiSpeed, csGpio, measDelay);
 
     spi_init(csGpio, spiSpeed);
     Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
