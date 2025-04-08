@@ -18,7 +18,7 @@ extern struct gpiod_chip *chip;
 extern struct gpiod_line *cs_line;
 
 // Initializes the SPI interface
-void spi_init();
+void spi_init(uint32_t spiSpeed);
 // Writes a single byte as an opcode
 void Write_Opcode(char one_byte);
 // Writes a 32-bit word to the specified address using the given opcode

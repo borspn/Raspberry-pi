@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <getopt.h>
 #include <unistd.h>
 #include "SPI_interface.h"
 #include "user_GP30_parameter.h"
@@ -13,6 +14,9 @@
 
 #define STORE_DATA_IN_FILE 0 // 0 = no, 1 = yes
 #define MEASURMENT_DELAY_IN_S 2
+
+#define DEFAULT_SPI_SPEED_HZ 500000  // Set SPI clock speed to 500kHz
+#define DEFAULT_MEAS_DELAY_IN_S 1 // Default SPI mode
 
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
@@ -450,12 +454,44 @@ void Process_TOF(void)
     Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     printf("main!\n");
     fflush(stdout);
 
-    spi_init();
+    uint32_t spiSpeed = DEFAULT_SPI_SPEED_HZ;
+    int measDelay = DEFAULT_MEAS_DELAY_IN_S;
+
+    int opt;
+    while ((opt = getopt(argc, argv, "s:d:")) != -1)
+    {
+        switch (opt)
+        {
+        case 's':
+            spiSpeed = atoi(optarg);
+            if (spiSpeed <= 0)
+            {
+                fprintf(stderr, "Invalid SPI speed. Using default: %d Hz\n", DEFAULT_SPI_SPEED_HZ);
+                spiSpeed = DEFAULT_SPI_SPEED_HZ;
+            }
+            break;
+        case 'd':
+            measDelay = atof(optarg);
+            if (measDelay <= 0)
+            {
+                fprintf(stderr, "Invalid measurement delay. Using default: %.2f seconds\n", (float)DEFAULT_MEAS_DELAY_IN_S);
+                measDelay = DEFAULT_MEAS_DELAY_IN_S;
+            }
+            break;
+        default:
+            fprintf(stderr, "Usage: %s [-s spiSpeed] [-d measDelay]\n", argv[0]);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    printf("Starting with SPI speed: %d Hz, Measurement delay: %.2f seconds\n", spiSpeed, measDelay);
+
+    spi_init(spiSpeed);
     Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
 
     while (1)
@@ -463,7 +499,7 @@ int main()
         printf("while main!\n");
         fflush(stdout);
 
-        sleep(MEASURMENT_DELAY_IN_S);
+        sleep(measDelay);
 
         if ((My_Chip_initialized == 1))
         {
