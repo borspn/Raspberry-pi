@@ -42,7 +42,7 @@ void spi_init(uint8_t csGpio, uint32_t spiSpeed)
     }
 
     // Open CS GPIO line
-    cs_line = gpiod_chip_get_line(chip, CS_GPIO);
+    cs_line = gpiod_chip_get_line(chip, csGpio);
     if (!cs_line)
     {
         fprintf(stderr, "Failed to get CS GPIO line!\n");
