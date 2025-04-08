@@ -15,8 +15,9 @@
 #define STORE_DATA_IN_FILE 0 // 0 = no, 1 = yes
 #define MEASURMENT_DELAY_IN_S 2
 
-#define DEFAULT_SPI_SPEED_HZ 500000  // Set SPI clock speed to 500kHz
-#define DEFAULT_MEAS_DELAY_IN_S 1 // Default SPI mode
+#define DEFAULT_SPI_SPEED_HZ 500000 // Set SPI clock speed to 500kHz
+#define DEFAULT_MEAS_DELAY_IN_S 1   // Default SPI mode
+#define DEFAULT_CS_GPIO 23
 
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
 #define INTERRUPT_GPIO_PIN 23
@@ -438,10 +439,11 @@ void Process_TOF(void)
 
         velocity = (abs(MyDiffTOFSumAvg) * (SPEED_OF_SOUND_WATER * SPEED_OF_SOUND_WATER)) / (2 * LEN_OF_SENS);
         volumetricFlowRate = VFR_CONSTANT * K_FACT * velocity * CROSS_AREA;
-        
+
         printf("TOF data: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
         printf("Velocity: %f\n", velocity);
-        printf("Volumetric Flow Rate: %f\n", volumetricFlowRate);printf("Velocity: %f\n", velocity);
+        printf("Volumetric Flow Rate: %f\n", volumetricFlowRate);
+        printf("Velocity: %f\n", velocity);
         fflush(stdout);
 
 #ifdef STORE_DATA_IN_FILE
@@ -460,7 +462,8 @@ int main(int argc, char *argv[])
     fflush(stdout);
 
     uint32_t spiSpeed = DEFAULT_SPI_SPEED_HZ;
-    int measDelay = DEFAULT_MEAS_DELAY_IN_S;
+    uint8_t csGpio = DEFAULT_CS_GPIO;
+    float measDelay = DEFAULT_MEAS_DELAY_IN_S;
 
     int opt;
     while ((opt = getopt(argc, argv, "s:d:")) != -1)
@@ -473,6 +476,14 @@ int main(int argc, char *argv[])
             {
                 fprintf(stderr, "Invalid SPI speed. Using default: %d Hz\n", DEFAULT_SPI_SPEED_HZ);
                 spiSpeed = DEFAULT_SPI_SPEED_HZ;
+            }
+            break;
+        case 'c':
+            csGpio = atoi(optarg);
+            if (csGpio < 0)
+            {
+                fprintf(stderr, "Invalid CS GPIO. Using default: %d\n", DEFAULT_CS_GPIO);
+                csGpio = DEFAULT_CS_GPIO;
             }
             break;
         case 'd':
@@ -491,7 +502,7 @@ int main(int argc, char *argv[])
 
     printf("Starting with SPI speed: %d Hz, Measurement delay: %.2f seconds\n", spiSpeed, measDelay);
 
-    spi_init(spiSpeed);
+    spi_init(csGpio, spiSpeed);
     Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
 
     while (1)

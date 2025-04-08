@@ -31,7 +31,7 @@ struct gpiod_line *cs_line;
  * @dependencies
  * - Requires the libgpiod library for GPIO operations.
  * - Requires access to the SPI device file (e.g., /dev/spidev0.0).**/
-void spi_init(uint32_t spiSpeed)
+void spi_init(uint8_t csGpio, uint32_t spiSpeed)
 {
     // Open GPIO chip
     chip = gpiod_chip_open_by_name("gpiochip0");
