@@ -17,10 +17,9 @@
 
 #define DEFAULT_SPI_SPEED_HZ 500000 // Set SPI clock speed to 500kHz
 #define DEFAULT_MEAS_DELAY_IN_S 1   // Default SPI mode
-#define DEFAULT_CS_GPIO 23
+#define DEFAULT_CS_GPIO 25
 
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
-#define INTERRUPT_GPIO_PIN 23
 #define CHIPNAME "gpiochip0"
 
 #define SPEED_OF_SOUND_WATER 1480.0
