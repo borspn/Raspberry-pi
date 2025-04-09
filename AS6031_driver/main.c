@@ -437,7 +437,7 @@ void Process_TOF(void)
         MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
 
         velocity = (abs(MyDiffTOFSumAvg) * (SPEED_OF_SOUND_WATER * SPEED_OF_SOUND_WATER)) / (2 * LEN_OF_SENS);
-        printf("abs(MyDiffTOFSumAvg) = %f\n", abs(MyDiffTOFSumAvg));
+        printf("abs(MyDiffTOFSumAvg) = %f\n", MyDiffTOFSumAvg);
         printf("SPEED_OF_SOUND_WATER = %f\n", SPEED_OF_SOUND_WATER);
         printf("LEN_OF_SENS = %f\n", LEN_OF_SENS);
         fflush(stdout);
