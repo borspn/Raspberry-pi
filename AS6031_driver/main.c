@@ -437,12 +437,15 @@ void Process_TOF(void)
         MyDiffTOFSumAvg_ps = MyDiffTOFSumAvg / 1e-12;
 
         velocity = (abs(MyDiffTOFSumAvg) * (SPEED_OF_SOUND_WATER * SPEED_OF_SOUND_WATER)) / (2 * LEN_OF_SENS);
+        printf("abs(MyDiffTOFSumAvg) = %f\n", abs(MyDiffTOFSumAvg));
+        printf("SPEED_OF_SOUND_WATER = %f\n", SPEED_OF_SOUND_WATER);
+        printf("LEN_OF_SENS = %f\n", LEN_OF_SENS);
+        fflush(stdout);
         volumetricFlowRate = VFR_CONSTANT * K_FACT * velocity * CROSS_AREA;
 
         printf("TOF data: %.3f\t%.3f\t%.3f\n", MyTOFSumAvgUP_ns, MyTOFSumAvgDOWN_ns, MyDiffTOFSumAvg_ps);
         printf("Velocity: %f\n", velocity);
         printf("Volumetric Flow Rate: %f\n", volumetricFlowRate);
-        printf("Velocity: %f\n", velocity);
         fflush(stdout);
 
 #ifdef STORE_DATA_IN_FILE
