@@ -48,10 +48,10 @@ void spi_init(const char *chip_name, uint8_t cs_gpio, const char *spi_device_pat
     }
 
     // Open CS GPIO line
-    cs_line = gpiod_chip_get_line(chip, csGpio);
+    cs_line = gpiod_chip_get_line(chip, cs_gpio);
     if (!cs_line)
     {
-        fprintf(stderr, "Failed to get CS GPIO line: %d\n", csGpio);
+        fprintf(stderr, "Failed to get CS GPIO line: %d\n", cs_gpio);
         gpiod_chip_close(chip);
         exit(1);
     }
@@ -92,7 +92,7 @@ void spi_init(const char *chip_name, uint8_t cs_gpio, const char *spi_device_pat
     }
 
     printf("SPI initialized with chip: %s, CS GPIO: %d, SPI device: %s, Speed: %u Hz\n",
-           chip_name, csGpio, spi_device_path, spi_speed);
+           chip_name, cs_gpio, spi_device_path, spi_speed);
 }
 
 /**
