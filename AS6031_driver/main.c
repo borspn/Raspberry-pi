@@ -475,14 +475,6 @@ int main(int argc, char *argv[])
     {
         switch (opt)
         {
-        case 's':
-            spiSpeed = atoi(optarg);
-            if (spiSpeed <= 0)
-            {
-                fprintf(stderr, "Invalid SPI speed. Using default: %d Hz\n", DEFAULT_SPI_SPEED_HZ);
-                spiSpeed = DEFAULT_SPI_SPEED_HZ;
-            }
-            break;
         case 'c':
             csGpio = atoi(optarg);
             if (csGpio < 0)
