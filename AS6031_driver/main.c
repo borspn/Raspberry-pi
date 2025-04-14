@@ -15,12 +15,13 @@
 #define STORE_DATA_IN_FILE 0 // 0 = no, 1 = yes
 #define MEASURMENT_DELAY_IN_S 2
 
-#define DEFAULT_SPI_SPEED_HZ 500000 // Set SPI clock speed to 500kHz
+
 #define DEFAULT_MEAS_DELAY_IN_S 1   // Default SPI mode
 #define DEFAULT_CS_GPIO 25
+#define DEFAULT_SPI_PATH "/dev/spidev0.0" 
+#define DEFAULT_SPI_CHIPNAME "gpiochip0"
 
 #define TIME_ns(x) (float)((x) * 1000000000.0) // result in [ns]
-#define CHIPNAME "gpiochip0"
 
 #define SPEED_OF_SOUND_WATER 1480.0
 #define LEN_OF_SENS 0.06456
@@ -464,12 +465,13 @@ int main(int argc, char *argv[])
     printf("main!\n");
     fflush(stdout);
 
-    uint32_t spiSpeed = DEFAULT_SPI_SPEED_HZ;
     uint8_t csGpio = DEFAULT_CS_GPIO;
     float measDelay = DEFAULT_MEAS_DELAY_IN_S;
+    const char *spi_device_path = DEFAULT_SPI_PATH;
+    const char *chip_name = DEFAULT_SPI_CHIPNAME;    
 
     int opt;
-    while ((opt = getopt(argc, argv, "s:c:d:")) != -1)
+    while ((opt = getopt(argc, argv, "s:c:d:p:n:")) != -1)
     {
         switch (opt)
         {
@@ -497,15 +499,21 @@ int main(int argc, char *argv[])
                 measDelay = DEFAULT_MEAS_DELAY_IN_S;
             }
             break;
+        case 'p':
+            spi_device_path = optarg;
+            break;
+        case 'n':
+            chip_name = optarg;
+            break;
         default:
-            fprintf(stderr, "Usage: %s [-s spiSpeed] [-d measDelay]\n", argv[0]);
+            fprintf(stderr, "Usage: %s [-s spiSpeed] [-c csGpio] [-d measDelay] [-p spiDevicePath] [-n chipName]\n", argv[0]);
             exit(EXIT_FAILURE);
         }
     }
 
-    printf("Starting with SPI speed: %d Hz, CS GPIO: %d , Measurement delay: %.2f seconds\n", spiSpeed, csGpio, measDelay);
+    printf("Starting with CS GPIO: %d, Measurement delay: %.2f seconds, SPI device: %s, GPIO chip: %s\n", csGpio, measDelay, spi_device_path, chip_name);
 
-    spi_init(csGpio, spiSpeed);
+    spi_init(chip_name, csGpio, spi_device_path);
     Write_Dword(RC_RAA_WR_RAM, SHR_EXC, (FES_CLR_mask | EF_CLR_mask | IF_CLR_mask));
 
     while (1)

@@ -22,22 +22,28 @@ struct gpiod_line *cs_line;
  *
  * If any step fails, the function prints an error message to stderr and terminates the program.
  *
+ * @param chip_name The name of the GPIO chip (e.g., "gpiochip0").
+ * @param csGpio The GPIO pin number for the Chip Select (CS) line.
+ * @param spi_device_path The path to the SPI device file (e.g., "/dev/spidev0.0").
+ * @param spiSpeed The desired SPI speed in Hz.
+ *
  * @note The CS GPIO pin is set to HIGH (inactive) by default after initialization.
  * @note The SPI mode is set to SPI_MODE_1 by default. Modify the `mode` variable if a different mode is required.
- * @note The SPI speed is set using the `SPI_SPEED_HZ` macro. Ensure this macro is defined with the desired speed.
+ * @note The SPI speed is set using the `spiSpeed` parameter.
  *
  * @warning This function exits the program on failure. Ensure proper error handling if integrating into a larger system.
  *
  * @dependencies
  * - Requires the libgpiod library for GPIO operations.
- * - Requires access to the SPI device file (e.g., /dev/spidev0.0).**/
-void spi_init(uint8_t csGpio, uint32_t spiSpeed)
+ * - Requires access to the SPI device file (e.g., /dev/spidev0.0).
+ */
+void spi_init(const char *chip_name, uint8_t cs_gpio, const char *spi_device_path)
 {
     // Open GPIO chip
-    chip = gpiod_chip_open_by_name("gpiochip0");
+    chip = gpiod_chip_open_by_name(chip_name);
     if (!chip)
     {
-        fprintf(stderr, "Failed to open GPIO chip!\n");
+        fprintf(stderr, "Failed to open GPIO chip: %s\n", chip_name);
         exit(1);
     }
 
@@ -45,7 +51,7 @@ void spi_init(uint8_t csGpio, uint32_t spiSpeed)
     cs_line = gpiod_chip_get_line(chip, csGpio);
     if (!cs_line)
     {
-        fprintf(stderr, "Failed to get CS GPIO line!\n");
+        fprintf(stderr, "Failed to get CS GPIO line: %d\n", csGpio);
         gpiod_chip_close(chip);
         exit(1);
     }
@@ -59,10 +65,10 @@ void spi_init(uint8_t csGpio, uint32_t spiSpeed)
     }
 
     // Open SPI device
-    spi_handle = open("/dev/spidev0.0", O_RDWR);
+    spi_handle = open(spi_device_path, O_RDWR);
     if (spi_handle < 0)
     {
-        fprintf(stderr, "Failed to open SPI device!\n");
+        fprintf(stderr, "Failed to open SPI device: %s\n", spi_device_path);
         gpiod_chip_close(chip);
         exit(1);
     }
@@ -72,11 +78,12 @@ void spi_init(uint8_t csGpio, uint32_t spiSpeed)
     {
         perror("Failed to set SPI mode");
         close(spi_handle);
+        gpiod_chip_close(chip);
         exit(1);
     }
 
-    uint32_t speed = SPI_SPEED_HZ;
-    if (ioctl(spi_handle, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0)
+    uint32_t spi_speed = SPI_SPEED_HZ; // Set SPI speed
+    if (ioctl(spi_handle, SPI_IOC_WR_MAX_SPEED_HZ, &spi_speed) < 0)
     {
         fprintf(stderr, "Failed to set SPI speed!\n");
         close(spi_handle);
@@ -84,7 +91,8 @@ void spi_init(uint8_t csGpio, uint32_t spiSpeed)
         exit(1);
     }
 
-    printf("SPI initialized using libgpiod!\n");
+    printf("SPI initialized with chip: %s, CS GPIO: %d, SPI device: %s, Speed: %u Hz\n",
+           chip_name, csGpio, spi_device_path, spi_speed);
 }
 
 /**

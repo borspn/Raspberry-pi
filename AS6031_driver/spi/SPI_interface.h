@@ -3,6 +3,7 @@
 #include <gpiod.h>
 #include <fcntl.h>
 
+#define SPI_SPEED 500000
 #define LOW 0
 #define HIGH 1
 #define PUT_SSN_LOW gpiod_line_set_value(cs_line, LOW);
@@ -13,7 +14,7 @@ extern struct gpiod_chip *chip;
 extern struct gpiod_line *cs_line;
 
 // Initializes the SPI interface
-void spi_init(uint8_t csGpio, uint32_t spiSpeed);
+void spi_init(const char *chip_name, uint8_t cs_gpio, const char *spi_device_path);
 // Writes a single byte as an opcode
 void Write_Opcode(char one_byte);
 // Writes a 32-bit word to the specified address using the given opcode
