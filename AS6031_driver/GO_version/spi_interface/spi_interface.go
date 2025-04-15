@@ -109,12 +109,7 @@ func ReadDword(opcode, address byte) uint32 {
 }
 
 func WriteRegisterAutoIncr(opcode, fromAddr byte, data []uint32, toAddr int) {
-	fmt.Println(len(data), int(toAddr)-int(fromAddr)+1)
 	putCSLow()
-	if len(data) != int(toAddr)-int(fromAddr)+1 {
-		log.Fatalf("Mismatch between data length and address range")
-	}
-	
 	defer putCSHigh()
 
 	if err := spiPort.Tx([]byte{opcode, fromAddr}, nil); err != nil {
