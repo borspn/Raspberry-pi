@@ -45,7 +45,7 @@ func InitSPI(chipName string, csGPIO int, spiDev string) {
 
 	// Request CS line
 	line, err := chip.RequestLine(csGPIO,
-		gpiocdev.AsOutputValue(1),
+		gpiocdev.AsOutput(1),        // ✅ correct usage
 		gpiocdev.WithConsumer("spi"),
 	)
 	if err != nil {
