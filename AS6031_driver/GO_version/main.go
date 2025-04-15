@@ -14,7 +14,7 @@ import (
 const (
 	defaultMeasDelaySec = 1
 	defaultCSGPIO       = 25
-	defaultSPIPath      = "/dev/spidev0.0"
+	defaultSPIPath      = "spidev0.0"
 	defaultSPIChipName  = "gpiochip0"
 	speedOfSoundWater   = 1480.0
 	lenOfSens           = 0.06456
