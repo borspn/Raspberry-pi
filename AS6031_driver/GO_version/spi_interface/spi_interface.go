@@ -112,7 +112,7 @@ func WriteRegisterAutoIncr(opcode, fromAddr byte, data []uint32, toAddr int) {
 	if len(data) != int(toAddr)-int(fromAddr)+1 {
 		log.Fatalf("Mismatch between data length and address range")
 	}
-
+	fmt.Println(len(data), int(toAddr)-int(fromAddr)+1)
 	putCSLow()
 	defer putCSHigh()
 
