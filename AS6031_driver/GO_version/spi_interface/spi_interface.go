@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/warthog618/gpiod"
+	"github.com/warthog618/go-gpiocdev"
 	"periph.io/x/conn/v3/spi"
 	"periph.io/x/conn/v3/spi/spireg"
 	"periph.io/x/host/v3"
@@ -13,7 +13,7 @@ import (
 
 var (
 	spiPort spi.Conn
-	csLine  *gpiod.Line
+	csLine  *gpiocdev.Line
 )
 
 // InitSPI initializes the SPI interface and CS GPIO line.
@@ -36,16 +36,22 @@ func InitSPI(chipName string, csGPIO int, spiDev string) {
 	}
 	spiPort = conn
 
-	// Open GPIO chip and request line
-	chip, err := gpiod.NewChip(chipName, gpiod.WithConsumer("spi"))
+	// Open GPIO chip
+	chip, err := gpiocdev.NewChip(chipName)
 	if err != nil {
 		log.Fatalf("Failed to open GPIO chip %s: %v", chipName, err)
 	}
+	defer chip.Close()
 
-	csLine, err = chip.RequestLine(csGPIO, gpiod.AsOutput(1))
+	// Request CS line
+	line, err := chip.RequestLine(csGPIO,
+		gpiocdev.AsOutputValue(1),
+		gpiocdev.WithConsumer("spi"),
+	)
 	if err != nil {
 		log.Fatalf("Failed to request CS line %d: %v", csGPIO, err)
 	}
+	csLine = line
 
 	log.Printf("SPI initialized: device=%s, chip=%s, cs_gpio=%d\n", spiDevPath, chipName, csGPIO)
 }
