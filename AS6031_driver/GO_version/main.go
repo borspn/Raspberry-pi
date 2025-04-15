@@ -166,6 +166,7 @@ func writeConfig() {
 	fmt.Println("Writing configuration...")
 	spi_interface.WriteOpcode(rcBMREQ)
 	spi_interface.WriteOpcode(rcMCTOFF)
+	fmt.Println("1111")
 	spi_interface.WriteRegisterAutoIncr(rcRAAWRRAM, 0xC0, cfgRegisters[:], 0xCF)
 	spi_interface.WriteDword(rcRAAWRRAM, byte(shrTOFRate), 0x00000001)
 	spi_interface.WriteDword(rcRAAWRRAM, byte(shrUSMRLSDLYU), 0x000015E0)
