@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/warthog618/go-gpiocdev"
+	"periph.io/x/conn/v3/physic"
 	"periph.io/x/conn/v3/spi"
 	"periph.io/x/conn/v3/spi/spireg"
 	"periph.io/x/host/v3"
@@ -30,7 +31,8 @@ func InitSPI(chipName string, csGPIO int, spiDev string) {
 	}
 
 	// Configure SPI port
-	conn, err := port.Connect(500_000, spi.Mode1, 8)
+	spiSpeed := 500 * physic.KiloHertz
+	conn, err := port.Connect(spiSpeed, spi.Mode1, 8)
 	if err != nil {
 		log.Fatalf("Failed to configure SPI port: %v", err)
 	}
@@ -45,7 +47,7 @@ func InitSPI(chipName string, csGPIO int, spiDev string) {
 
 	// Request CS line
 	line, err := chip.RequestLine(csGPIO,
-		gpiocdev.AsOutput(1),        // ✅ correct usage
+		gpiocdev.AsOutput(1), // ✅ correct usage
 		gpiocdev.WithConsumer("spi"),
 	)
 	if err != nil {
