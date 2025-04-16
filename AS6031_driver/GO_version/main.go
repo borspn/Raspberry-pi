@@ -238,8 +238,8 @@ func processTOF() {
 			}
 		}
 
-		myTOFSumAvgUP = calcTimeOfFlight(byte(fdbUSTOFADDALLU)) / float32(tofHitNO)
 		myTOFSumAvgDOWN = calcTimeOfFlight(byte(fdbUSTOFADDALLD)) / float32(tofHitNO)
+		myTOFSumAvgUP = calcTimeOfFlight(byte(fdbUSTOFADDALLU)) / float32(tofHitNO)
 
 		myRAWPWUP = spi_interface.ReadDword(rcRAARDRAM, byte(fdbUSPWU))
 		myRAWPWDOWN = spi_interface.ReadDword(rcRAARDRAM, byte(fdbUSPWD))
