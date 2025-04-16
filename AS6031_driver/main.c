@@ -246,7 +246,9 @@ float Calc_TimeOfFlight(uint32_t TOF_address)
     RAWValue = Read_Dword(RC_RAA_RD_RAM, TOF_address);
     /* Calculation of Time of Flight */
     FLOATValue = Two_s_Complement_Conversion(RAWValue, 16, T_REF);
-
+    printf("RAWValue = %d\n", RAWValue);
+    printf("FLOATValue = %f\n", FLOATValue);
+    fflush(stdout);
     return FLOATValue;
 }
 

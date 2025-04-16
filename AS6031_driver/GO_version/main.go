@@ -185,6 +185,8 @@ func calcTimeOfFlight(tofAddress byte) float32 {
 	fmt.Printf("Reading TOF from address: 0x%X\n", tofAddress)
 	rawValue = spi_interface.ReadDword(rcRAARDRAM, tofAddress)
 	floatValue = twoSComplementConversion(rawValue, 16, float32(tRef))
+	fmt.Println("TOF raw value:", rawValue)
+	fmt.Println("TOF float value:", floatValue)
 
 	return floatValue
 }
