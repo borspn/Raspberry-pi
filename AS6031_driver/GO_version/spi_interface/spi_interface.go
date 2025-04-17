@@ -108,17 +108,21 @@ func ReadDword(opcode, address byte) uint32 {
 	return binary.BigEndian.Uint32(rx)
 }
 
-func WriteRegisterAutoIncr(opcode, fromAddr byte, data []uint32, toAddr int) {
+func WriteRegisterAutoIncr(opcode uint8, fromAddr int, data []uint32, toAddr int) {
 	putCSLow()
 	defer putCSHigh()
 
-	if err := spiPort.Tx([]byte{opcode, fromAddr}, nil); err != nil {
+	if err := spiPort.Tx([]byte{opcode, byte(fromAddr)}, nil); err != nil {
 		log.Fatalf("Failed to write auto-incr header: %v", err)
 	}
 
-	for _, val := range data {
+	for addr := int(fromAddr); addr <= toAddr; addr++ {
+		if (toAddr-fromAddr) >= len(data) {
+			log.Fatalf("Data array is smaller than the address range")
+		}
+
 		buf := make([]byte, 4)
-		binary.BigEndian.PutUint32(buf, val)
+		binary.BigEndian.PutUint32(buf, data[addr-fromAddr])
 		if err := spiPort.Tx(buf, nil); err != nil {
 			log.Fatalf("Failed to write dword in auto-incr: %v", err)
 		}
