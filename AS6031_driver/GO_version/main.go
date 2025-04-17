@@ -38,7 +38,7 @@ const (
 	rcRAARDRAM      byte   = 0x7A
 	shrTOFRate      byte   = 0xD0
 	shrUSMRLSDLYU   byte   = 0xD1
-	shrUSMRLSDLYD   byte   = 0xD3
+	shrUSMRLSDLYD   byte   = 0xD2
 	shrZCDFHLU      byte   = 0xDA
 	shrZCDFHLD      byte   = 0xDB
 	shrEXC          byte   = 0xDD
