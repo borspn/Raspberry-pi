@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	spiPort     spi.Conn
-	csLine      *gpiocdev.Line
+	//spiPort     spi.Conn
+	//csLine      *gpiocdev.Line
 	spiFile     *os.File
 	csValueFile *os.File
 )
