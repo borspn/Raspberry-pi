@@ -259,11 +259,11 @@ func spiTransfer(tx []byte, rx []byte) error {
 	msg := spiIocTransfer{
 		TxBuf:       uint64(txPtr),
 		RxBuf:       uint64(rxPtr),
-		Len:         uint32(length), // ← now covers both TX and RX
-		SpeedHz:     0,              // leave as-configured
-		DelayUsecs:  0,
-		BitsPerWord: 0,
-		CsChange:    0,
+		Len:         uint32(length),
+		SpeedHz:     0, // leave as was configured
+		DelayUsecs:  0, // leave as was configured
+		BitsPerWord: 0, // leave as was configured
+		CsChange:    0, // leave as was configured
 	}
 
 	if _, _, errno := syscall.Syscall(
