@@ -28,6 +28,17 @@ type gpiohandleData struct {
 	Values [64]uint8
 }
 
+type spiIocTransfer struct {
+	TxBuf       uint64
+	RxBuf       uint64
+	Len         uint32
+	SpeedHz     uint32
+	DelayUsecs  uint16
+	BitsPerWord uint8
+	CsChange    uint8
+	pad         uint32
+}
+
 // ioctl numbers from <linux/gpio.h>
 const (
 	GPIOHANDLE_REQUEST_OUTPUT        = 1 << 1
@@ -36,6 +47,7 @@ const (
 	spiIOCWrBitsPerWord              = 0x40016b03 // _IOW('k', 3, __u8)
 	spiIOCWrMaxSpeedHz               = 0x40046b04 // _IOW('k', 4, __u32)
 	GPIOHANDLE_SET_LINE_VALUES_IOCTL = 0xC040B409 // _IOW(0xB4, 0x09, struct gpiohandle_data)
+	spiIOCMessage1                   = 0x40206b00 // _IOW('k', 0, struct spi_ioc_transfer)
 )
 
 // Global constants
@@ -220,4 +232,58 @@ func putCSHigh() error {
 		return fmt.Errorf("failed to set CS high: %v", errno)
 	}
 	return nil
+}
+
+func spiTransfer(tx []byte, rx []byte) error {
+    var txPtr, rxPtr uintptr
+    if len(tx) > 0 {
+        txPtr = uintptr(unsafe.Pointer(&tx[0]))
+    }
+    if len(rx) > 0 {
+        rxPtr = uintptr(unsafe.Pointer(&rx[0]))
+    }
+
+    msg := spiIocTransfer{
+        TxBuf:       uint64(txPtr),
+        RxBuf:       uint64(rxPtr),
+        Len:         uint32(len(tx)),
+        SpeedHz:     0, // use whatever was set by InitSPI
+        DelayUsecs:  0,
+        BitsPerWord: 0,
+        CsChange:    0,
+    }
+
+    if _, _, errno := syscall.Syscall(
+        syscall.SYS_IOCTL,
+        spiFile.Fd(),
+        uintptr(spiIOCMessage1),
+        uintptr(unsafe.Pointer(&msg)),
+    ); errno != 0 {
+        return fmt.Errorf("ioctl SPI_IOC_MESSAGE failed: %v", errno)
+    }
+    return nil
+}
+
+func writeOpcode(b byte) {
+	// drive CS low
+	if err := putCSLow(); err != nil {
+		log.Fatalf("failed to set CS low: %v", err)
+	}
+	// ensure CS goes high afterwards
+	defer func() {
+		if err := putCSHigh(); err != nil {
+			log.Fatalf("failed to set CS high: %v", err)
+		}
+	}()
+
+	// do a one‐byte SPI transfer
+	tx := []byte{b}
+	if err := spiTransfer(tx, nil); err != nil {
+		log.Fatalf("SPI write failed: %v", err)
+	}
+}
+
+// clearAllFlags resets all the relevant flags, namely Frontend Status, Error Flag, and Interrupt Flag.
+func clearAllFlags() {
+	//writeDword(rcRAAWRRAM, byte(shrEXC), (fesCLRMask | efCLRMask | ifCLRMask))
 }
