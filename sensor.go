@@ -240,19 +240,41 @@ func calcTimeOfFlight(addr byte) float32 {
 }
 
 func InitSensor(spiPath string, cs int) {
-	csPin = cs
+    csPin = cs
 
-	/* ---- GPIO (CS) ---- */
-	_ = gpioExport(csPin) // ignore “already exported”
-	time.Sleep(10 * time.Millisecond)
-	must(gpioDirection(csPin, true))
-	must(gpioWrite(csPin, true)) // idle high
+    // ---- GPIO (CS) ----
+    // 1) Export the pin
+    if err := os.WriteFile("/sys/class/gpio/export",
+        []byte(strconv.Itoa(csPin)), 0o644); err != nil && !os.IsExist(err) {
+        must(err)
+    }
+    time.Sleep(10 * time.Millisecond)
 
-	/* ---- SPI ---- */
-	const mode1 uint8 = 0x01 // CPOL=0, CPHA=1
-	dev, err := openSPI("/dev/"+spiPath, mode1, 500_000)
-	must(err)
-	spiPort = dev
+    // 2) Set direction to "out"
+    dirPath := fmt.Sprintf("/sys/class/gpio/gpio%d/direction", csPin)
+    must(os.WriteFile(dirPath, []byte("out"), 0o644))
+
+    // 3) Drive it high (idle)
+    valPath := fmt.Sprintf("/sys/class/gpio/gpio%d/value", csPin)
+    must(os.WriteFile(valPath, []byte("1"), 0o644))
+
+    // ---- SPI ----
+    devPath := "/dev/" + spiPath
+    fd, err := syscall.Open(devPath, syscall.O_RDWR, 0)
+    must(err)
+
+    // Mode (CPOL=0, CPHA=1)
+    const mode1 = 0x01
+    must(ioctlSetInt(uintptr(fd), SPI_IOC_WR_MODE, int(mode1)))
+
+    // 8 bits per word
+    must(ioctlSetInt(uintptr(fd), SPI_IOC_WR_BITS_PER_WORD, 8))
+
+    // Max speed = 500 kHz
+    must(ioctlSetInt(uintptr(fd), SPI_IOC_WR_MAX_SPEED_HZ, 500_000))
+
+    // Wrap in our spiDev for later Tx/Close
+    spiPort = &spiDev{fd: fd}
 }
 
 /* --------------------------- hw helpers ------------------------------ */
