@@ -8,10 +8,9 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"syscall"   // std-lib only!
 	"time"
 	"unsafe"
-
-	"golang.org/x/sys/unix"
 )
 
 // Global constants
@@ -31,14 +30,24 @@ const (
 
 // hand-coded spi/spidev.h numbers for ARM64 Linux
 const (
-    SPI_IOC_WR_MODE          = 0x40016b01
-    SPI_IOC_WR_BITS_PER_WORD = 0x40016b03
-    SPI_IOC_WR_MAX_SPEED_HZ  = 0x40046b04
-    // helper for a single transfer
-    SPI_IOC_MESSAGE_1        = 0x40206b00
+	SPI_IOC_WR_MODE          = 0x40016b01
+	SPI_IOC_WR_BITS_PER_WORD = 0x40016b03
+	SPI_IOC_WR_MAX_SPEED_HZ  = 0x40046b04
 )
 
-type SpiIocTransfer = unix.SpiIocTransfer
+const SPI_IOC_MESSAGE_1 = 0x40206b00
+type spiIOCTransfer struct {
+	txBuf        uint64
+	rxBuf        uint64
+	length       uint32
+	speedHz      uint32
+	delayUsecs   uint16
+	bitsPerWord  uint8
+	csChange     uint8
+	txNBits      uint8
+	rxNBits      uint8
+	pad          uint16
+}
 
 // Adresses, opcodes and masks constants
 const (
@@ -116,6 +125,38 @@ var fwc = []byte{
 
 /* --------------------------- small helpers --------------------------- */
 
+func spiTransfer(fd int, tx, rx []byte) error {
+	var t spiIOCTransfer
+	if len(tx) > 0 {
+		t.txBuf = uint64(uintptr(unsafe.Pointer(&tx[0])))
+	}
+	if len(rx) > 0 {
+		t.rxBuf = uint64(uintptr(unsafe.Pointer(&rx[0])))
+	}
+	if n := len(tx); n > 0 {
+		t.length = uint32(n)
+	} else {
+		t.length = uint32(len(rx))
+	}
+	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL,
+		uintptr(fd),
+		uintptr(SPI_IOC_MESSAGE_1),
+		uintptr(unsafe.Pointer(&t)),
+	)
+	if errno != 0 {
+		return errno
+	}
+	return nil
+}
+
+func ioctlSetInt(fd uintptr, req, value int) error {
+	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(req), uintptr(value))
+	if errno != 0 {
+		return errno
+	}
+	return nil
+}
+
 // simple sysfs-GPIO bits – enough for manual CS
 func gpioExport(pin int) error {
 	return os.WriteFile("/sys/class/gpio/export",
@@ -142,57 +183,28 @@ func gpioWrite(pin int, hi bool) error {
 
 /* --------------------------- SPI wrapper ----------------------------- */
 
-type spiDev struct {
-	fd int
-}
+type spiDev struct{ fd int }
 
 func openSPI(path string, mode uint8, speedHz uint32) (*spiDev, error) {
-	fd, err := unix.Open(path, unix.O_RDWR, 0)
+	fd, err := syscall.Open(path, syscall.O_RDWR, 0)
 	if err != nil {
 		return nil, err
 	}
-	// mode
-	if err := unix.IoctlSetInt(fd, unix.SPI_IOC_WR_MODE, int(mode)); err != nil {
+	if err := ioctlSetInt(uintptr(fd), SPI_IOC_WR_MODE, int(mode)); err != nil {
 		return nil, err
 	}
-	// bits-per-word = 8
-	if err := unix.IoctlSetInt(fd, unix.SPI_IOC_WR_BITS_PER_WORD, 8); err != nil {
+	if err := ioctlSetInt(uintptr(fd), SPI_IOC_WR_BITS_PER_WORD, 8); err != nil {
 		return nil, err
 	}
-	// max-speed
-	if err := unix.IoctlSetInt(fd, unix.SPI_IOC_WR_MAX_SPEED_HZ, int(speedHz)); err != nil {
+	if err := ioctlSetInt(uintptr(fd), SPI_IOC_WR_MAX_SPEED_HZ, int(speedHz)); err != nil {
 		return nil, err
 	}
 	return &spiDev{fd: fd}, nil
 }
 
-func (s *spiDev) Tx(tx, rx []byte) error {
-	const sizeof = int(unsafe.Sizeof(unix.SpiIocTransfer{}))
-	var t unix.SpiIocTransfer
-	if len(tx) > 0 {
-		t.TxBuf = uint64(uintptr(unsafe.Pointer(&tx[0])))
-	}
-	if len(rx) > 0 {
-		t.RxBuf = uint64(uintptr(unsafe.Pointer(&rx[0])))
-	}
-	n := len(tx)
-	if n == 0 {
-		n = len(rx)
-	}
-	t.Len = uint32(n)
-	_, _, errno := unix.Syscall(
-		unix.SYS_IOCTL,
-		uintptr(s.fd),
-		uintptr(unix.SPI_IOC_MESSAGE(1)),
-		uintptr(unsafe.Pointer(&t)),
-	)
-	if errno != 0 {
-		return errno
-	}
-	return nil
-}
+func (s *spiDev) Tx(tx, rx []byte) error { return spiTransfer(s.fd, tx, rx) }
+func (s *spiDev) Close()                 { _ = syscall.Close(s.fd) }
 
-func (s *spiDev) Close() { unix.Close(s.fd) }
 
 /* --------------------------- driver state ---------------------------- */
 
