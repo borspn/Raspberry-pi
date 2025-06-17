@@ -1,9 +1,10 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
 	"log"
 	"os"
+
 	//"strconv"
 	"syscall"
 	"unsafe"
@@ -23,13 +24,18 @@ type gpiohandleRequest struct {
 	Fd            int32
 }
 
+type gpiohandleData struct {
+	Values [64]uint8
+}
+
 // ioctl numbers from <linux/gpio.h>
 const (
-	GPIOHANDLE_REQUEST_OUTPUT = 1 << 1
-	GPIO_GET_LINEHANDLE_IOCTL = 0xC16CB403 // _IOWR(0xB4, 0x03, struct gpiohandle_request)
-	spiIOCWrMode              = 0x40016b01 // _IOW('k', 1, __u8)
-	spiIOCWrBitsPerWord       = 0x40016b03 // _IOW('k', 3, __u8)
-	spiIOCWrMaxSpeedHz        = 0x40046b04 // _IOW('k', 4, __u32)
+	GPIOHANDLE_REQUEST_OUTPUT        = 1 << 1
+	GPIO_GET_LINEHANDLE_IOCTL        = 0xC16CB403 // _IOWR(0xB4, 0x03, struct gpiohandle_request)
+	spiIOCWrMode                     = 0x40016b01 // _IOW('k', 1, __u8)
+	spiIOCWrBitsPerWord              = 0x40016b03 // _IOW('k', 3, __u8)
+	spiIOCWrMaxSpeedHz               = 0x40046b04 // _IOW('k', 4, __u32)
+	GPIOHANDLE_SET_LINE_VALUES_IOCTL = 0xC040B409 // _IOW(0xB4, 0x09, struct gpiohandle_data)
 )
 
 // Global constants
@@ -122,60 +128,78 @@ var fwc = []byte{
 }
 
 func InitSPI(chipName string, csGPIO int, spiDev string) {
-    // 1) Open SPI device
-    devPath := "/dev/" + spiDev
-    f, err := os.OpenFile(devPath, os.O_RDWR, 0)
-    if err != nil {
-        log.Fatalf("Failed to open SPI device %s: %v", devPath, err)
-    }
-    spiFile = f
+	// 1) Open SPI device
+	devPath := "/dev/" + spiDev
+	f, err := os.OpenFile(devPath, os.O_RDWR, 0)
+	if err != nil {
+		log.Fatalf("Failed to open SPI device %s: %v", devPath, err)
+	}
+	spiFile = f
 
-    // 2) Configure SPI mode/speed via ioctl
-    var (
-        mode1       = uint8(1)
-        bits8       = uint8(8)
-        speed500kHz = uint32(500000)
-    )
-    // mode
-    if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(),
-        spiIOCWrMode, uintptr(unsafe.Pointer(&mode1))); errno != 0 {
-        log.Fatalf("Failed to set SPI mode: %v", errno)
-    }
-    // bits
-    if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(),
-        spiIOCWrBitsPerWord, uintptr(unsafe.Pointer(&bits8))); errno != 0 {
-        log.Fatalf("Failed to set SPI bits-per-word: %v", errno)
-    }
-    // speed
-    if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(),
-        spiIOCWrMaxSpeedHz, uintptr(unsafe.Pointer(&speed500kHz))); errno != 0 {
-        log.Fatalf("Failed to set SPI max speed: %v", errno)
-    }
+	// 2) Configure SPI mode/speed via ioctl
+	var (
+		mode1       = uint8(1)
+		bits8       = uint8(8)
+		speed500kHz = uint32(500000)
+	)
+	// mode
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(),
+		spiIOCWrMode, uintptr(unsafe.Pointer(&mode1))); errno != 0 {
+		log.Fatalf("Failed to set SPI mode: %v", errno)
+	}
+	// bits
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(),
+		spiIOCWrBitsPerWord, uintptr(unsafe.Pointer(&bits8))); errno != 0 {
+		log.Fatalf("Failed to set SPI bits-per-word: %v", errno)
+	}
+	// speed
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(),
+		spiIOCWrMaxSpeedHz, uintptr(unsafe.Pointer(&speed500kHz))); errno != 0 {
+		log.Fatalf("Failed to set SPI max speed: %v", errno)
+	}
 
-    // 3) Open the GPIO chip character device
-    //    chipName should be something like "gpiochip0"
-    chipPath := "/dev/" + chipName
-    chipDev, err := os.OpenFile(chipPath, os.O_RDWR, 0)
-    if err != nil {
-        log.Fatalf("Failed to open GPIO chip %s: %v", chipPath, err)
-    }
-    defer chipDev.Close()
+	// 3) Open the GPIO chip character device
+	//    chipName should be something like "gpiochip0"
+	chipPath := "/dev/" + chipName
+	chipDev, err := os.OpenFile(chipPath, os.O_RDWR, 0)
+	if err != nil {
+		log.Fatalf("Failed to open GPIO chip %s: %v", chipPath, err)
+	}
+	defer chipDev.Close()
 
-    // 4) Prepare a line‐handle request for the CS line
-    var req gpiohandleRequest
-    req.LineOffsets[0] = uint32(csGPIO)            // which line on that chip
-    req.Flags = GPIOHANDLE_REQUEST_OUTPUT         // request as output
-    req.DefaultValues[0] = 1                      // idle-high
-    copy(req.ConsumerLabel[:], "spi")             // label it “spi”
-    req.Lines = 1
+	// 4) Prepare a line‐handle request for the CS line
+	var req gpiohandleRequest
+	req.LineOffsets[0] = uint32(csGPIO)   // which line on that chip
+	req.Flags = GPIOHANDLE_REQUEST_OUTPUT // request as output
+	req.DefaultValues[0] = 1              // idle-high
+	copy(req.ConsumerLabel[:], "spi")     // label it “spi”
+	req.Lines = 1
 
-    // 5) Issue the ioctl to get the line handle fd
-    if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, chipDev.Fd(),
-        uintptr(GPIO_GET_LINEHANDLE_IOCTL), uintptr(unsafe.Pointer(&req))); errno != 0 {
-        log.Fatalf("Failed to request GPIO line %d: %v", csGPIO, errno)
-    }
-    csHandleFd = int(req.Fd)  // save for future toggles
+	// 5) Issue the ioctl to get the line handle fd
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, chipDev.Fd(),
+		uintptr(GPIO_GET_LINEHANDLE_IOCTL), uintptr(unsafe.Pointer(&req))); errno != 0 {
+		log.Fatalf("Failed to request GPIO line %d: %v", csGPIO, errno)
+	}
+	csHandleFd = int(req.Fd) // save for future toggles
 
-    log.Printf("SPI initialized: device=%s, chip=%s, cs_gpio=%d\n",
-        devPath, chipName, csGPIO)
+	log.Printf("SPI initialized: device=%s, chip=%s, cs_gpio=%d\n",
+		devPath, chipName, csGPIO)
+}
+
+func putCSLow() error {
+	// prepare a single-line value-array with 0 (low)
+	data := gpiohandleData{
+		Values: [64]uint8{0},
+	}
+
+	// issue the ioctl on csHandleFd
+	if _, _, errno := syscall.Syscall(
+		syscall.SYS_IOCTL,
+		uintptr(csHandleFd),
+		uintptr(GPIOHANDLE_SET_LINE_VALUES_IOCTL),
+		uintptr(unsafe.Pointer(&data)),
+	); errno != 0 {
+		return fmt.Errorf("failed to set CS low: %v", errno)
+	}
+	return nil
 }
