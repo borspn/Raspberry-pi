@@ -12,6 +12,6 @@ func main() {
 	t := time.NewTicker(10 * time.Second)
 	for fr := range t.C {
 		_ = fr // just wait
-		fmt.Printf("flow: %.6f\n", sensor.ReadFlowRate())
+		fmt.Printf("flow: %.6f\n", ReadFlowRate())
 	}
 }
