@@ -1,5 +1,5 @@
 // sensor.go – minimal-dep rewrite, Go ≥1.20
-package sensor
+package main
 
 import (
 	"encoding/binary"
