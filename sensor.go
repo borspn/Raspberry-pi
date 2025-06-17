@@ -29,6 +29,17 @@ const (
 	tRef                = 1.0 / hsCkolck
 )
 
+// hand-coded spi/spidev.h numbers for ARM64 Linux
+const (
+    SPI_IOC_WR_MODE          = 0x40016b01
+    SPI_IOC_WR_BITS_PER_WORD = 0x40016b03
+    SPI_IOC_WR_MAX_SPEED_HZ  = 0x40046b04
+    // helper for a single transfer
+    SPI_IOC_MESSAGE_1        = 0x40206b00
+)
+
+type SpiIocTransfer = unix.SpiIocTransfer
+
 // Adresses, opcodes and masks constants
 const (
 	tofHitNOMask    uint32 = 0x00001F00
