@@ -14,7 +14,7 @@ var (
 
 func main() {
 	InitSPI(chipName, csGPIO, spiDev)
-
+	SensorInit()
 	t := time.NewTicker(10 * time.Second)
 	for fr := range t.C {
 		_ = fr // just wait
