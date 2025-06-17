@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
 	"os"
@@ -235,55 +236,61 @@ func putCSHigh() error {
 }
 
 func spiTransfer(tx []byte, rx []byte) error {
-    var txPtr, rxPtr uintptr
-    if len(tx) > 0 {
-        txPtr = uintptr(unsafe.Pointer(&tx[0]))
-    }
-    if len(rx) > 0 {
-        rxPtr = uintptr(unsafe.Pointer(&rx[0]))
-    }
+	var txPtr, rxPtr uintptr
+	if len(tx) > 0 {
+		txPtr = uintptr(unsafe.Pointer(&tx[0]))
+	}
+	if len(rx) > 0 {
+		rxPtr = uintptr(unsafe.Pointer(&rx[0]))
+	}
 
-    msg := spiIocTransfer{
-        TxBuf:       uint64(txPtr),
-        RxBuf:       uint64(rxPtr),
-        Len:         uint32(len(tx)),
-        SpeedHz:     0, // use whatever was set by InitSPI
-        DelayUsecs:  0,
-        BitsPerWord: 0,
-        CsChange:    0,
-    }
+	msg := spiIocTransfer{
+		TxBuf:       uint64(txPtr),
+		RxBuf:       uint64(rxPtr),
+		Len:         uint32(len(tx)),
+		SpeedHz:     0, // use whatever was set by InitSPI
+		DelayUsecs:  0,
+		BitsPerWord: 0,
+		CsChange:    0,
+	}
 
-    if _, _, errno := syscall.Syscall(
-        syscall.SYS_IOCTL,
-        spiFile.Fd(),
-        uintptr(spiIOCMessage1),
-        uintptr(unsafe.Pointer(&msg)),
-    ); errno != 0 {
-        return fmt.Errorf("ioctl SPI_IOC_MESSAGE failed: %v", errno)
-    }
-    return nil
+	if _, _, errno := syscall.Syscall(
+		syscall.SYS_IOCTL,
+		spiFile.Fd(),
+		uintptr(spiIOCMessage1),
+		uintptr(unsafe.Pointer(&msg)),
+	); errno != 0 {
+		return fmt.Errorf("ioctl SPI_IOC_MESSAGE failed: %v", errno)
+	}
+	return nil
 }
 
 func writeOpcode(b byte) {
-	// drive CS low
-	if err := putCSLow(); err != nil {
-		log.Fatalf("failed to set CS low: %v", err)
-	}
-	// ensure CS goes high afterwards
-	defer func() {
-		if err := putCSHigh(); err != nil {
-			log.Fatalf("failed to set CS high: %v", err)
-		}
-	}()
+	putCSLow()
+	defer putCSHigh()
 
-	// do a one‐byte SPI transfer
 	tx := []byte{b}
 	if err := spiTransfer(tx, nil); err != nil {
 		log.Fatalf("SPI write failed: %v", err)
 	}
 }
 
+func writeDword(opcode, address byte, value uint32) {
+	// build a 6-byte buffer: [opcode][address][value(4 bytes BE)]
+	buf := make([]byte, 6)
+	buf[0] = opcode
+	buf[1] = address
+	binary.BigEndian.PutUint32(buf[2:], value)
+
+	putCSLow()
+	defer putCSHigh()
+
+	if err := spiTransfer(buf, nil); err != nil {
+		log.Fatalf("SPI write failed: %v", err)
+	}
+}
+
 // clearAllFlags resets all the relevant flags, namely Frontend Status, Error Flag, and Interrupt Flag.
 func clearAllFlags() {
-	//writeDword(rcRAAWRRAM, byte(shrEXC), (fesCLRMask | efCLRMask | ifCLRMask))
+	writeDword(rcRAAWRRAM, byte(shrEXC), (fesCLRMask | efCLRMask | ifCLRMask))
 }
