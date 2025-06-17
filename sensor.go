@@ -362,28 +362,29 @@ func writeSensorConfig(opcode uint8, fromAddr int, data []uint32, toAddr int) {
 
 func SensorInit() {
 	cfgRegisters := [20]uint32{
-		0x48DBA399,
-		0x00800401,
-		0x00000000,
-		0x00000001,
-		0x0011F7FF,
-		0x6046EF29,
-		0x01012100,
-		0x00240000,
-		0x006807E4,
-		0x60160204,
-		0x010FEA14,
-		0x23A4DE81,
-		0x94A0C46C,
-		0x401100C4,
-		0x00A7400F,
-		0x00000001,
-		0x000015E0,
-		0x000015E0,
-		0x0000004B,
-		0x0000004B,
+        0x48DBA399, // [0xC0] CR_WD_DIS
+        0x00800401, // [0xC1] CR_IFC_CTRL
+        0x00000000, // [0xC2] CR_GP_CTRL
+        0x00000001, // [0xC3] CR_USM_OPT
+        0x0011F7FF, // [0xC4] CR_IEH
+        0x6046EF29, // [0xC5] CR_CPM
+        0x01012100, // [0xC6] CR_MRG_TS
+        0x00240000, // [0xC7] CR_TPM
+        0x006807E4, // [0xC8] CR_USM_PRC
+        0x60160204, // [0xC9] CR_USM_FRC
+        0x010FEA14, // [0xCA] CR_USM_TOF
+        0x23A4DE81, // [0xCB] CR_USM_AM
+        0x94A0C46C, // [0xCC] CR_TRIM1
+        0x401100C4, // [0xCD] CR_TRIM2
+        0x00A7400F, // [0xCE] CR_TRIM3
+        0x00000001, // [0xD0] SHR_TOF_RATE
+        0x000015E0, // [0xD1] SHR_USM_RLS_DLY_U
+        0x000015E0, // [0xD2] SHR_USM_RLS_DLY_D
+        0x0000004B, // [0xDA] SHR_ZCD_FHL_U
+        0x0000004B  // [0xDB] SHR_ZCD_FHL_D
 	}
 
+	clearAllFlags()
 	myNewFHL = uint8(myNewFHLmV / 0.88)
 
 	writeDword(rcRAAWRRAM, byte(shrFHLU), uint32(myNewFHL))
@@ -391,9 +392,6 @@ func SensorInit() {
 
 	mySetFHLmV = myNewFHLmV
 	myNewFHLmV = 0
-
-	tofHitNO = cfgRegisters[10] & uint32(tofHitNOMask)
-	tofHitNO >>= 8
 
 	tofHitNO = cfgRegisters[10] & uint32(tofHitNOMask)
 	tofHitNO >>= 8
