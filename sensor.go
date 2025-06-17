@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"syscall"
@@ -139,6 +140,31 @@ func InitSPI(chipName string, csGPIO int, spiDev string) {
 		spiIOCWrMaxSpeedHz, uintptr(unsafe.Pointer(&speed500kHz))); errno != 0 {
 		log.Fatalf("Failed to set SPI max speed: %v", errno)
 	}
+	// 3) Export CS GPIO via sysfs (if not already)
+	gpioPath := fmt.Sprintf("/sys/class/gpio/gpio%d", csGPIO)
+	if _, err := os.Stat(gpioPath); os.IsNotExist(err) {
+		if err := os.WriteFile("/sys/class/gpio/export",
+			[]byte(fmt.Sprintf("%d", csGPIO)), 0644); err != nil {
+			log.Fatalf("Failed to export GPIO %d: %v", csGPIO, err)
+		}
+	}
+	// 4) Configure direction = out
+	if err := os.WriteFile(gpioPath+"/direction",
+		[]byte("out"), 0644); err != nil {
+		log.Fatalf("Failed to set GPIO direction: %v", err)
+	}
+	// 5) Open the value file for later SetCS calls
+	vf, err := os.OpenFile(gpioPath+"/value", os.O_WRONLY, 0)
+	if err != nil {
+		log.Fatalf("Failed to open GPIO value file: %v", err)
+	}
+	csValueFile = vf
 
+	// 6) Drive CS high (inactive)
+	if _, err := csValueFile.WriteString("1"); err != nil {
+		log.Fatalf("Failed to set CS idle state: %v", err)
+	}
+
+	log.Printf("SPI initialized: device=%s, cs_gpio=%d\n", devPath, csGPIO)
 	// …rest of function unchanged…
 }
