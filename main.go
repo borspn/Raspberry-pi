@@ -15,6 +15,7 @@ func main() {
 	InitSPI(chipName, csGPIO, spiDev)
 	putCSLow()
 	putCSHigh()
+	putCSLow()
 	fmt.Println("success")
 	//SensorInit()
 
