@@ -6,9 +6,6 @@ import (
 	"os"
 	"syscall"
 	"unsafe"
-
-	"github.com/warthog618/go-gpiocdev"
-	"periph.io/x/conn/v3/spi"
 )
 
 var (
