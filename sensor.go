@@ -192,6 +192,30 @@ var (
 
 /* --------------------------- public init ----------------------------- */
 
+func writeSensorConfig(op byte, start int, data []uint32, end int) {
+	csLow()
+	defer csHigh()
+	// write header
+	_ = spiPort.Tx([]byte{op, byte(start)}, nil)
+	// write words
+	for addr := start; addr <= end && addr-start < len(data); addr++ {
+		var tmp [4]byte
+		binary.BigEndian.PutUint32(tmp[:], data[addr-start])
+		_ = spiPort.Tx(tmp[:], nil)
+	}
+}
+
+// clearAllFlags = reset FES / EF / IF bits in EXC
+func clearAllFlags() {
+	writeDword(rcRAAWRRAM, shrEXC, fesCLRMask|efCLRMask|ifCLRMask)
+}
+
+// calcTimeOfFlight returns a signed float value from a RAM address
+func calcTimeOfFlight(addr byte) float32 {
+	raw := readDword(rcRAARDRAM, addr)
+	return twos(raw, tRef)
+}
+
 func InitSensor(spiPath string, cs int) {
 	csPin = cs
 
