@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	"math"
 	"os"
 
 	//"strconv"
@@ -409,4 +410,53 @@ func SensorInit() {
 	writeOpcode(rcMCTON)
 	writeOpcode(rcIFCLR)
 	writeOpcode(rcBMRLS)
+}
+
+func myInitState() {
+	myErrorCounter = 0
+	myNewConfiguration = 0
+	myChipInitialized = 1
+}
+
+func calcTimeOfFlight(tofAddress byte) float32 {
+	var rawValue uint32
+	var floatValue float32
+
+	rawValue = readDword(rcRAARDRAM, tofAddress)
+	floatValue = twoSComplementConversion(rawValue, float32(tRef))
+
+	return floatValue
+}
+
+func ReadFlowRate() float64 {
+
+	srrERRFLAGContent = readDword(rcRAARDRAM, srrERRFLAG)
+
+	if srrERRFLAGContent > 0 {
+		//fmt.Printf("SRR_ERR_FLAG_content%d\n", srrERRFLAGContent)
+		fmt.Println("...error!")
+		myErrorCounter++
+		clearAllFlags()
+	} else {
+		myTOFSumAvgDOWN = calcTimeOfFlight(byte(fdbUSTOFADDALLD)) / float32(tofHitNO)
+		myTOFSumAvgUP = calcTimeOfFlight(byte(fdbUSTOFADDALLU)) / float32(tofHitNO)
+
+		myDiffTOFSumAvg = myTOFSumAvgDOWN - myTOFSumAvgUP
+
+		myTOFSumAvgUPNs = myTOFSumAvgUP / 1e-9
+		myTOFSumAvgDOWNNs = myTOFSumAvgDOWN / 1e-9
+		myDiffTOFSumAvgPs = myDiffTOFSumAvg / 1e-12
+
+		velocity := (math.Abs(float64(myDiffTOFSumAvgPs)) * (speedOfSoundWater * speedOfSoundWater)) / (2 * lenOfSens)
+		velocity *= 1e-12
+		volumetricFlowRate := vfrConstant * kFact * velocity * crossArea
+
+		//fmt.Printf("TOF data: %.3f\t%.3f\t%.3f\n", myTOFSumAvgUPNs, myTOFSumAvgDOWNNs, myDiffTOFSumAvgPs)
+		//fmt.Printf("Velocity: %f\n", velocity)
+		//fmt.Printf("Volumetric Flow Rate: %f\n", volumetricFlowRate)
+		clearAllFlags()
+		return volumetricFlowRate
+	}
+	clearAllFlags()
+	return 0.0
 }

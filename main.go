@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 	//"time"
 )
 
@@ -13,16 +14,10 @@ var (
 
 func main() {
 	InitSPI(chipName, csGPIO, spiDev)
-	writeOpcode(99)
-	writeDword(rcRAAWRRAM, byte(shrEXC), (fesCLRMask | efCLRMask | ifCLRMask))
-	readDword(rcRAARDRAM, srrERRFLAG)
-	SensorInit()
-	fmt.Println("success")
-	//SensorInit()
 
-	// t := time.NewTicker(10 * time.Second)
-	// for fr := range t.C {
-	// 	_ = fr // just wait
-	// 	fmt.Printf("flow: %.6f\n", ReadFlowRate())
-	// }
+	t := time.NewTicker(10 * time.Second)
+	for fr := range t.C {
+		_ = fr // just wait
+		fmt.Printf("flow: %.6f\n", ReadFlowRate())
+	}
 }
