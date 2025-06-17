@@ -203,3 +203,21 @@ func putCSLow() error {
 	}
 	return nil
 }
+
+func putCSHigh() error {
+	// prepare a single-line value-array with 1 (high)
+	data := gpiohandleData{
+		Values: [64]uint8{1},
+	}
+
+	// issue the ioctl on csHandleFd
+	if _, _, errno := syscall.Syscall(
+		syscall.SYS_IOCTL,
+		uintptr(csHandleFd),
+		uintptr(GPIOHANDLE_SET_LINE_VALUES_IOCTL),
+		uintptr(unsafe.Pointer(&data)),
+	); errno != 0 {
+		return fmt.Errorf("failed to set CS high: %v", errno)
+	}
+	return nil
+}
