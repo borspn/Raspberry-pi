@@ -6,8 +6,6 @@ import (
 	"log"
 	"math"
 	"os"
-
-	//"strconv"
 	"syscall"
 	"unsafe"
 )
@@ -237,48 +235,47 @@ func putCSHigh() error {
 }
 
 func spiTransfer(tx []byte, rx []byte) error {
-    // determine how many bytes to clock
-    length := len(tx)
-    if len(rx) > length {
-        length = len(rx)
-    }
+	// determine how many bytes to clock
+	length := len(tx)
+	if len(rx) > length {
+		length = len(rx)
+	}
 
-    // if we're reading-only, make a dummy TX buffer of the right size
-    var dummy []byte
-    if len(tx) == 0 && length > 0 {
-        dummy = make([]byte, length)
-        tx = dummy
-    }
+	// if we're reading-only, make a dummy TX buffer of the right size
+	var dummy []byte
+	if len(tx) == 0 && length > 0 {
+		dummy = make([]byte, length)
+		tx = dummy
+	}
 
-    var txPtr, rxPtr uintptr
-    if len(tx) > 0 {
-        txPtr = uintptr(unsafe.Pointer(&tx[0]))
-    }
-    if len(rx) > 0 {
-        rxPtr = uintptr(unsafe.Pointer(&rx[0]))
-    }
+	var txPtr, rxPtr uintptr
+	if len(tx) > 0 {
+		txPtr = uintptr(unsafe.Pointer(&tx[0]))
+	}
+	if len(rx) > 0 {
+		rxPtr = uintptr(unsafe.Pointer(&rx[0]))
+	}
 
-    msg := spiIocTransfer{
-        TxBuf:       uint64(txPtr),
-        RxBuf:       uint64(rxPtr),
-        Len:         uint32(length), // ← now covers both TX and RX
-        SpeedHz:     0,              // leave as-configured
-        DelayUsecs:  0,
-        BitsPerWord: 0,
-        CsChange:    0,
-    }
+	msg := spiIocTransfer{
+		TxBuf:       uint64(txPtr),
+		RxBuf:       uint64(rxPtr),
+		Len:         uint32(length), // ← now covers both TX and RX
+		SpeedHz:     0,              // leave as-configured
+		DelayUsecs:  0,
+		BitsPerWord: 0,
+		CsChange:    0,
+	}
 
-    if _, _, errno := syscall.Syscall(
-        syscall.SYS_IOCTL,
-        spiFile.Fd(),
-        uintptr(spiIOCMessage1),
-        uintptr(unsafe.Pointer(&msg)),
-    ); errno != 0 {
-        return fmt.Errorf("ioctl SPI_IOC_MESSAGE failed: %v", errno)
-    }
-    return nil
+	if _, _, errno := syscall.Syscall(
+		syscall.SYS_IOCTL,
+		spiFile.Fd(),
+		uintptr(spiIOCMessage1),
+		uintptr(unsafe.Pointer(&msg)),
+	); errno != 0 {
+		return fmt.Errorf("ioctl SPI_IOC_MESSAGE failed: %v", errno)
+	}
+	return nil
 }
-
 
 func writeOpcode(b byte) {
 	putCSLow()
@@ -456,9 +453,6 @@ func ReadFlowRate() float64 {
 		velocity *= 1e-12
 		volumetricFlowRate := vfrConstant * kFact * velocity * crossArea
 
-		//fmt.Printf("TOF data: %.3f\t%.3f\t%.3f\n", myTOFSumAvgUPNs, myTOFSumAvgDOWNNs, myDiffTOFSumAvgPs)
-		//fmt.Printf("Velocity: %f\n", velocity)
-		//fmt.Printf("Volumetric Flow Rate: %f\n", volumetricFlowRate)
 		clearAllFlags()
 		return volumetricFlowRate
 	}
