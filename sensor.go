@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"syscall"
@@ -140,7 +141,7 @@ func InitSPI(chipName string, csGPIO int, spiDev string) {
 		log.Fatalf("Failed to set SPI max speed: %v", errno)
 	}
 	// 3) Export CS GPIO via sysfs (if not already)
-	// gpioPath := fmt.Sprintf("/sys/class/gpio/gpio%d", csGPIO)
+	gpioPath := fmt.Sprintf("/sys/class/gpio/gpio%d", csGPIO)
 	// if _, err := os.Stat(gpioPath); os.IsNotExist(err) {
 	// 	if err := os.WriteFile("/sys/class/gpio/export",
 	// 		[]byte(fmt.Sprintf("%d", csGPIO)), 0644); err != nil {
