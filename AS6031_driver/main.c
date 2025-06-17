@@ -546,9 +546,6 @@ int main()
 
                 writeConfig();
 
-                My_Set_FHL_mV = Read_Dword(RC_RAA_RD_RAM, SHR_ZCD_FHL_U);
-                My_Set_FHL_mV *= 0.88;
-
                 // Write_Opcode(RC_MCT_ON); // RC_MCT_ON
                 //  Write_Opcode(RC_IF_CLR);
                 My_Chip_idle_state = 0;
