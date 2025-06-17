@@ -1,16 +1,21 @@
-// sensor.go – minimal-dep rewrite, Go ≥1.20
 package main
 
 import (
-	"encoding/binary"
 	"fmt"
 	"log"
-	"math"
 	"os"
-	"strconv"
-	"syscall" // std-lib only!
-	"time"
+	"syscall"
 	"unsafe"
+
+	"github.com/warthog618/go-gpiocdev"
+	"periph.io/x/conn/v3/spi"
+)
+
+var (
+	spiPort     spi.Conn
+	csLine      *gpiocdev.Line
+	spiFile     *os.File
+	csValueFile *os.File
 )
 
 // Global constants
@@ -27,28 +32,6 @@ const (
 	hsCkolck            = 4e6
 	tRef                = 1.0 / hsCkolck
 )
-
-// hand-coded spi/spidev.h numbers for ARM64 Linux
-const (
-	SPI_IOC_WR_MODE          = 0x40016b01
-	SPI_IOC_WR_BITS_PER_WORD = 0x40016b03
-	SPI_IOC_WR_MAX_SPEED_HZ  = 0x40046b04
-)
-
-const SPI_IOC_MESSAGE_1 = 0x40206b00
-
-type spiIOCTransfer struct {
-	txBuf       uint64
-	rxBuf       uint64
-	length      uint32
-	speedHz     uint32
-	delayUsecs  uint16
-	bitsPerWord uint8
-	csChange    uint8
-	txNBits     uint8
-	rxNBits     uint8
-	pad         uint16
-}
 
 // Adresses, opcodes and masks constants
 const (
@@ -124,292 +107,65 @@ var fwc = []byte{
 	0xCD,
 }
 
-/* --------------------------- small helpers --------------------------- */
+func InitSPI(chipName string, csGPIO int, spiDev string) {
+	// 1) Open SPI device
+	devPath := "/dev/" + spiDev
+	f, err := os.OpenFile(devPath, os.O_RDWR, 0)
+	if err != nil {
+		log.Fatalf("Failed to open SPI device %s: %v", devPath, err)
+	}
+	spiFile = f
 
-func spiTransfer(fd int, tx, rx []byte) error {
-	var t spiIOCTransfer
-	if len(tx) > 0 {
-		t.txBuf = uint64(uintptr(unsafe.Pointer(&tx[0])))
-	}
-	if len(rx) > 0 {
-		t.rxBuf = uint64(uintptr(unsafe.Pointer(&rx[0])))
-	}
-	if n := len(tx); n > 0 {
-		t.length = uint32(n)
-	} else {
-		t.length = uint32(len(rx))
-	}
-	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL,
-		uintptr(fd),
-		uintptr(SPI_IOC_MESSAGE_1),
-		uintptr(unsafe.Pointer(&t)),
+	// 2) Ioctl constants from <linux/spi/spidev.h>
+	const (
+		spiIOCWrMode        = 0x40016b01 // _IOW('k', 1, __u8)
+		spiIOCWrBitsPerWord = 0x40016b03 // _IOW('k', 3, __u8)
+		spiIOCWrMaxSpeedHz  = 0x40046b04 // _IOW('k', 4, __u32)
+		mode1               = uint8(1)
+		bits8               = uint8(8)
+		speed500kHz         = uint32(500000)
 	)
-	if errno != 0 {
-		return errno
+
+	// 2a) Set SPI mode to Mode1
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(),
+		spiIOCWrMode, uintptr(unsafe.Pointer(&mode1))); errno != 0 {
+		log.Fatalf("Failed to set SPI mode: %v", errno)
 	}
-	return nil
-}
-
-func ioctlSetInt(fd uintptr, req, value int) error {
-	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(req), uintptr(value))
-	if errno != 0 {
-		return errno
+	// 2b) Set bits-per-word = 8
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(),
+		spiIOCWrBitsPerWord, uintptr(unsafe.Pointer(&bits8))); errno != 0 {
+		log.Fatalf("Failed to set SPI bits-per-word: %v", errno)
 	}
-	return nil
-}
-
-// simple sysfs-GPIO bits – enough for manual CS
-func gpioExport(pin int) error {
-	return os.WriteFile("/sys/class/gpio/export",
-		[]byte(strconv.Itoa(pin)), 0o644)
-}
-func gpioDirection(pin int, out bool) error {
-	dir := "in"
-	if out {
-		dir = "out"
+	// 2c) Set max-speed = 500 kHz
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(),
+		spiIOCWrMaxSpeedHz, uintptr(unsafe.Pointer(&speed500kHz))); errno != 0 {
+		log.Fatalf("Failed to set SPI max speed: %v", errno)
 	}
-	return os.WriteFile(
-		fmt.Sprintf("/sys/class/gpio/gpio%d/direction", pin),
-		[]byte(dir), 0o644)
-}
-func gpioWrite(pin int, hi bool) error {
-	val := "0"
-	if hi {
-		val = "1"
+
+	// 3) Export CS GPIO via sysfs (if not already)
+	gpioPath := fmt.Sprintf("/sys/class/gpio/gpio%d", csGPIO)
+	if _, err := os.Stat(gpioPath); os.IsNotExist(err) {
+		if err := os.WriteFile("/sys/class/gpio/export",
+			[]byte(fmt.Sprintf("%d", csGPIO)), 0644); err != nil {
+			log.Fatalf("Failed to export GPIO %d: %v", csGPIO, err)
+		}
 	}
-	return os.WriteFile(
-		fmt.Sprintf("/sys/class/gpio/gpio%d/value", pin),
-		[]byte(val), 0o644)
-}
-
-/* --------------------------- SPI wrapper ----------------------------- */
-
-type spiDev struct{ fd int }
-
-func openSPI(path string, mode uint8, speedHz uint32) (*spiDev, error) {
-	fd, err := syscall.Open(path, syscall.O_RDWR, 0)
+	// 4) Configure direction = out
+	if err := os.WriteFile(gpioPath+"/direction",
+		[]byte("out"), 0644); err != nil {
+		log.Fatalf("Failed to set GPIO direction: %v", err)
+	}
+	// 5) Open the value file for later SetCS calls
+	vf, err := os.OpenFile(gpioPath+"/value", os.O_WRONLY, 0)
 	if err != nil {
-		return nil, err
+		log.Fatalf("Failed to open GPIO value file: %v", err)
 	}
-	if err := ioctlSetInt(uintptr(fd), SPI_IOC_WR_MODE, int(mode)); err != nil {
-		return nil, err
-	}
-	if err := ioctlSetInt(uintptr(fd), SPI_IOC_WR_BITS_PER_WORD, 8); err != nil {
-		return nil, err
-	}
-	if err := ioctlSetInt(uintptr(fd), SPI_IOC_WR_MAX_SPEED_HZ, int(speedHz)); err != nil {
-		return nil, err
-	}
-	return &spiDev{fd: fd}, nil
-}
+	csValueFile = vf
 
-func (s *spiDev) Tx(tx, rx []byte) error { return spiTransfer(s.fd, tx, rx) }
-func (s *spiDev) Close()                 { _ = syscall.Close(s.fd) }
-
-/* --------------------------- driver state ---------------------------- */
-
-var (
-	spiPort *spiDev
-	csPin   = 25 // default
-)
-
-/* --------------------------- public init ----------------------------- */
-
-func writeSensorConfig(op byte, start int, data []uint32, end int) {
-	csLow()
-	defer csHigh()
-	// write header
-	_ = spiPort.Tx([]byte{op, byte(start)}, nil)
-	// write words
-	for addr := start; addr <= end && addr-start < len(data); addr++ {
-		var tmp [4]byte
-		binary.BigEndian.PutUint32(tmp[:], data[addr-start])
-		_ = spiPort.Tx(tmp[:], nil)
-	}
-}
-
-// clearAllFlags = reset FES / EF / IF bits in EXC
-func clearAllFlags() {
-	writeDword(rcRAAWRRAM, shrEXC, fesCLRMask|efCLRMask|ifCLRMask)
-}
-
-// calcTimeOfFlight returns a signed float value from a RAM address
-func calcTimeOfFlight(addr byte) float32 {
-	raw := readDword(rcRAARDRAM, addr)
-	return twos(raw, tRef)
-}
-
-// InitSensor exports csPin via sysfs, drives it high (idle),
-// then opens and configures /dev/spidev<spiPath>.
-func InitSensor(spiPath string, csPinNum int) {
-	csPin = csPinNum
-
-	// ---- GPIO (CS) via sysfs ----
-
-	// 1) Export the line (ignore “already exported” errors)
-	if err := os.WriteFile("/sys/class/gpio/export",
-		[]byte(strconv.Itoa(csPin)), 0o644); err != nil && !os.IsExist(err) {
-		must(err)
-	}
-	time.Sleep(10 * time.Millisecond)
-
-	// 2) Set direction to out
-	dirPath := fmt.Sprintf("/sys/class/gpio/gpio%d/direction", csPin)
-	must(os.WriteFile(dirPath, []byte("out"), 0o644))
-
-	// 3) Drive it high (idle state)
-	valPath := fmt.Sprintf("/sys/class/gpio/gpio%d/value", csPin)
-	must(os.WriteFile(valPath, []byte("1"), 0o644))
-
-	// ---- SPI ----
-
-	// Open the SPI device node
-	dev := "/dev/" + spiPath
-	fd, err := syscall.Open(dev, syscall.O_RDWR, 0)
-	must(err)
-
-	// CPOL=0, CPHA=1
-	const mode1 = 0x01
-	must(ioctlSetInt(uintptr(fd), SPI_IOC_WR_MODE, int(mode1)))
-
-	// 8 bits per word
-	must(ioctlSetInt(uintptr(fd), SPI_IOC_WR_BITS_PER_WORD, 8))
-
-	// 500 kHz max speed
-	must(ioctlSetInt(uintptr(fd), SPI_IOC_WR_MAX_SPEED_HZ, 500_000))
-
-	// Wrap it up in our spiDev for Tx/Close
-	spiPort = &spiDev{fd: fd}
-}
-
-/* --------------------------- hw helpers ------------------------------ */
-
-func csLow()  { must(gpioWrite(csPin, false)) }
-func csHigh() { must(gpioWrite(csPin, true)) }
-
-func writeOpcode(b byte) {
-	csLow()
-	defer csHigh()
-	must(spiPort.Tx([]byte{b}, nil))
-}
-
-func writeDword(op, addr byte, v uint32) {
-	buf := []byte{op, addr, 0, 0, 0, 0}
-	binary.BigEndian.PutUint32(buf[2:], v)
-	csLow()
-	defer csHigh()
-	must(spiPort.Tx(buf, nil))
-}
-
-func readDword(op, addr byte) uint32 {
-	tx := []byte{op, addr}
-	rx := make([]byte, 4)
-	csLow()
-	defer csHigh()
-	must(spiPort.Tx(tx, nil))
-	must(spiPort.Tx(nil, rx))
-	return binary.BigEndian.Uint32(rx)
-}
-
-func twos(raw uint32, mult float32) float32 {
-	const full = 65536.0
-	val := float64(raw)
-	if val > full/2-1 {
-		val -= full
-	}
-	return float32(val/full) * mult
-}
-
-/* --------------------------- high-level API -------------------------- */
-
-func SensorInit() {
-	cfgRegisters := [20]uint32{
-		0x48DBA399,
-		0x00800401,
-		0x00000000,
-		0x00000001,
-		0x0011F7FF,
-		0x6046EF29,
-		0x01012100,
-		0x00240000,
-		0x006807E4,
-		0x60160204,
-		0x010FEA14,
-		0x23A4DE81,
-		0x94A0C46C,
-		0x401100C4,
-		0x00A7400F,
-		0x00000001,
-		0x000015E0,
-		0x000015E0,
-		0x0000004B,
-		0x0000004B,
+	// 6) Drive CS high (inactive)
+	if _, err := csValueFile.WriteString("1"); err != nil {
+		log.Fatalf("Failed to set CS idle state: %v", err)
 	}
 
-	myNewFHL = uint8(myNewFHLmV / 0.88)
-
-	writeDword(rcRAAWRRAM, byte(shrFHLU), uint32(myNewFHL))
-	writeDword(rcRAAWRRAM, byte(shrFHLD), uint32(myNewFHL))
-
-	mySetFHLmV = myNewFHLmV
-	myNewFHLmV = 0
-
-	tofHitNO = cfgRegisters[10] & uint32(tofHitNOMask)
-	tofHitNO >>= 8
-
-	tofHitNO = cfgRegisters[10] & uint32(tofHitNOMask)
-	tofHitNO >>= 8
-
-	//fmt.Println("Writing configuration...")
-	writeOpcode(rcBMREQ)
-	writeOpcode(rcMCTOFF)
-	writeSensorConfig(rcRAAWRRAM, 0xC0, cfgRegisters[:], 0xCF)
-	writeDword(rcRAAWRRAM, byte(shrTOFRate), 0x00000001)
-	writeDword(rcRAAWRRAM, byte(shrUSMRLSDLYU), 0x000015E0)
-	writeDword(rcRAAWRRAM, byte(shrUSMRLSDLYD), 0x000015E0)
-	writeDword(rcRAAWRRAM, byte(shrZCDFHLU), 0x0000004B)
-	writeDword(rcRAAWRRAM, byte(shrZCDFHLD), 0x0000004B)
-	writeOpcode(rcMCTON)
-	writeOpcode(rcIFCLR)
-	writeOpcode(rcBMRLS)
-}
-
-func ReadFlowRate() float64 {
-	srrERRFLAGContent = readDword(rcRAARDRAM, srrERRFLAG)
-
-	if srrERRFLAGContent > 0 {
-		//fmt.Printf("SRR_ERR_FLAG_content%d\n", srrERRFLAGContent)
-		fmt.Println("...error!")
-		myErrorCounter++
-		clearAllFlags()
-	} else {
-		myTOFSumAvgDOWN = calcTimeOfFlight(byte(fdbUSTOFADDALLD)) / float32(tofHitNO)
-		myTOFSumAvgUP = calcTimeOfFlight(byte(fdbUSTOFADDALLU)) / float32(tofHitNO)
-
-		myDiffTOFSumAvg = myTOFSumAvgDOWN - myTOFSumAvgUP
-
-		myTOFSumAvgUPNs = myTOFSumAvgUP / 1e-9
-		myTOFSumAvgDOWNNs = myTOFSumAvgDOWN / 1e-9
-		myDiffTOFSumAvgPs = myDiffTOFSumAvg / 1e-12
-
-		velocity := (math.Abs(float64(myDiffTOFSumAvgPs)) * (speedOfSoundWater * speedOfSoundWater)) / (2 * lenOfSens)
-		velocity *= 1e-12
-		volumetricFlowRate := vfrConstant * kFact * velocity * crossArea
-
-		//fmt.Printf("TOF data: %.3f\t%.3f\t%.3f\n", myTOFSumAvgUPNs, myTOFSumAvgDOWNNs, myDiffTOFSumAvgPs)
-		//fmt.Printf("Velocity: %f\n", velocity)
-		//fmt.Printf("Volumetric Flow Rate: %f\n", volumetricFlowRate)
-		clearAllFlags()
-		return volumetricFlowRate
-	}
-	clearAllFlags()
-	return 0.0
-}
-
-/* --------------------------- utils ---------------------------------- */
-
-func must(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.Printf("SPI initialized: device=%s, cs_gpio=%d\n", devPath, csGPIO)
 }
