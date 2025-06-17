@@ -8,7 +8,7 @@ import (
 	"math"
 	"os"
 	"strconv"
-	"syscall"   // std-lib only!
+	"syscall" // std-lib only!
 	"time"
 	"unsafe"
 )
@@ -36,17 +36,18 @@ const (
 )
 
 const SPI_IOC_MESSAGE_1 = 0x40206b00
+
 type spiIOCTransfer struct {
-	txBuf        uint64
-	rxBuf        uint64
-	length       uint32
-	speedHz      uint32
-	delayUsecs   uint16
-	bitsPerWord  uint8
-	csChange     uint8
-	txNBits      uint8
-	rxNBits      uint8
-	pad          uint16
+	txBuf       uint64
+	rxBuf       uint64
+	length      uint32
+	speedHz     uint32
+	delayUsecs  uint16
+	bitsPerWord uint8
+	csChange    uint8
+	txNBits     uint8
+	rxNBits     uint8
+	pad         uint16
 }
 
 // Adresses, opcodes and masks constants
@@ -205,7 +206,6 @@ func openSPI(path string, mode uint8, speedHz uint32) (*spiDev, error) {
 func (s *spiDev) Tx(tx, rx []byte) error { return spiTransfer(s.fd, tx, rx) }
 func (s *spiDev) Close()                 { _ = syscall.Close(s.fd) }
 
-
 /* --------------------------- driver state ---------------------------- */
 
 var (
@@ -239,42 +239,47 @@ func calcTimeOfFlight(addr byte) float32 {
 	return twos(raw, tRef)
 }
 
-func InitSensor(spiPath string, cs int) {
-    csPin = cs
+// InitSensor exports csPin via sysfs, drives it high (idle),
+// then opens and configures /dev/spidev<spiPath>.
+func InitSensor(spiPath string, csPinNum int) {
+	csPin = csPinNum
 
-    // ---- GPIO (CS) ----
-    // 1) Export the pin
-    if err := os.WriteFile("/sys/class/gpio/export",
-        []byte(strconv.Itoa(csPin)), 0o644); err != nil && !os.IsExist(err) {
-        must(err)
-    }
-    time.Sleep(10 * time.Millisecond)
+	// ---- GPIO (CS) via sysfs ----
 
-    // 2) Set direction to "out"
-    dirPath := fmt.Sprintf("/sys/class/gpio/gpio%d/direction", csPin)
-    must(os.WriteFile(dirPath, []byte("out"), 0o644))
+	// 1) Export the line (ignore “already exported” errors)
+	if err := os.WriteFile("/sys/class/gpio/export",
+		[]byte(strconv.Itoa(csPin)), 0o644); err != nil && !os.IsExist(err) {
+		must(err)
+	}
+	time.Sleep(10 * time.Millisecond)
 
-    // 3) Drive it high (idle)
-    valPath := fmt.Sprintf("/sys/class/gpio/gpio%d/value", csPin)
-    must(os.WriteFile(valPath, []byte("1"), 0o644))
+	// 2) Set direction to out
+	dirPath := fmt.Sprintf("/sys/class/gpio/gpio%d/direction", csPin)
+	must(os.WriteFile(dirPath, []byte("out"), 0o644))
 
-    // ---- SPI ----
-    devPath := "/dev/" + spiPath
-    fd, err := syscall.Open(devPath, syscall.O_RDWR, 0)
-    must(err)
+	// 3) Drive it high (idle state)
+	valPath := fmt.Sprintf("/sys/class/gpio/gpio%d/value", csPin)
+	must(os.WriteFile(valPath, []byte("1"), 0o644))
 
-    // Mode (CPOL=0, CPHA=1)
-    const mode1 = 0x01
-    must(ioctlSetInt(uintptr(fd), SPI_IOC_WR_MODE, int(mode1)))
+	// ---- SPI ----
 
-    // 8 bits per word
-    must(ioctlSetInt(uintptr(fd), SPI_IOC_WR_BITS_PER_WORD, 8))
+	// Open the SPI device node
+	dev := "/dev/" + spiPath
+	fd, err := syscall.Open(dev, syscall.O_RDWR, 0)
+	must(err)
 
-    // Max speed = 500 kHz
-    must(ioctlSetInt(uintptr(fd), SPI_IOC_WR_MAX_SPEED_HZ, 500_000))
+	// CPOL=0, CPHA=1
+	const mode1 = 0x01
+	must(ioctlSetInt(uintptr(fd), SPI_IOC_WR_MODE, int(mode1)))
 
-    // Wrap in our spiDev for later Tx/Close
-    spiPort = &spiDev{fd: fd}
+	// 8 bits per word
+	must(ioctlSetInt(uintptr(fd), SPI_IOC_WR_BITS_PER_WORD, 8))
+
+	// 500 kHz max speed
+	must(ioctlSetInt(uintptr(fd), SPI_IOC_WR_MAX_SPEED_HZ, 500_000))
+
+	// Wrap it up in our spiDev for Tx/Close
+	spiPort = &spiDev{fd: fd}
 }
 
 /* --------------------------- hw helpers ------------------------------ */
