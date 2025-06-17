@@ -290,6 +290,34 @@ func writeDword(opcode, address byte, value uint32) {
 	}
 }
 
+func readDword(opcode, address byte) uint32 {
+    tx := []byte{opcode, address}
+    rx := make([]byte, 4)
+
+    // pull CS low
+    if err := putCSLow(); err != nil {
+        log.Fatalf("failed to set CS low: %v", err)
+    }
+    // ensure CS is released
+    defer func() {
+        if err := putCSHigh(); err != nil {
+            log.Fatalf("failed to set CS high: %v", err)
+        }
+    }()
+
+    // write the opcode+address
+    if err := spiTransfer(tx, nil); err != nil {
+        log.Fatalf("SPI write failed: %v", err)
+    }
+    // read the 4-byte response
+    if err := spiTransfer(nil, rx); err != nil {
+        log.Fatalf("SPI read failed: %v", err)
+    }
+
+    // decode big-endian uint32
+    return binary.BigEndian.Uint32(rx)
+}
+
 // clearAllFlags resets all the relevant flags, namely Frontend Status, Error Flag, and Interrupt Flag.
 func clearAllFlags() {
 	writeDword(rcRAAWRRAM, byte(shrEXC), (fesCLRMask | efCLRMask | ifCLRMask))

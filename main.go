@@ -15,6 +15,7 @@ func main() {
 	InitSPI(chipName, csGPIO, spiDev)
 	writeOpcode(99)
 	writeDword(rcRAAWRRAM, byte(shrEXC), (fesCLRMask | efCLRMask | ifCLRMask))
+	readDword(rcRAARDRAM, srrERRFLAG)
 	fmt.Println("success")
 	//SensorInit()
 
