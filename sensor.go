@@ -14,12 +14,6 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-
-var (
-	spiPort spi.Conn
-	csLine  *gpiocdev.Line
-)
-
 // Global constants
 const (
 	defaultMeasDelaySec = 1
@@ -192,13 +186,8 @@ func (s *spiDev) Close() { unix.Close(s.fd) }
 /* --------------------------- driver state ---------------------------- */
 
 var (
-	spiPort       *spiDev
-	csPin         = 25 // default
-	tRef          = 1.0 / 4_000_000.0
-	myErrorCounter              uint32
-	myChipInitialized, tofHitNO uint32
-	myNewFHL                     uint8
-	myNewFHLmV, mySetFHLmV       float32
+	spiPort *spiDev
+	csPin   = 25 // default
 )
 
 /* --------------------------- public init ----------------------------- */
@@ -207,13 +196,13 @@ func InitSensor(spiPath string, cs int) {
 	csPin = cs
 
 	/* ---- GPIO (CS) ---- */
-	_ = gpioExport(csPin)        // ignore “already exported”
+	_ = gpioExport(csPin) // ignore “already exported”
 	time.Sleep(10 * time.Millisecond)
 	must(gpioDirection(csPin, true))
 	must(gpioWrite(csPin, true)) // idle high
 
 	/* ---- SPI ---- */
-	const mode1 uint8 = 0x01            // CPOL=0, CPHA=1
+	const mode1 uint8 = 0x01 // CPOL=0, CPHA=1
 	dev, err := openSPI("/dev/"+spiPath, mode1, 500_000)
 	must(err)
 	spiPort = dev
@@ -259,7 +248,8 @@ func twos(raw uint32, mult float32) float32 {
 
 /* --------------------------- high-level API -------------------------- */
 
-func SensorInit() {	cfgRegisters := [20]uint32{
+func SensorInit() {
+	cfgRegisters := [20]uint32{
 		0x48DBA399,
 		0x00800401,
 		0x00000000,
@@ -308,9 +298,9 @@ func SensorInit() {	cfgRegisters := [20]uint32{
 	writeOpcode(rcMCTON)
 	writeOpcode(rcIFCLR)
 	writeOpcode(rcBMRLS)
- }
+}
 
-func ReadFlowRate() float64 { 
+func ReadFlowRate() float64 {
 	srrERRFLAGContent = readDword(rcRAARDRAM, srrERRFLAG)
 
 	if srrERRFLAGContent > 0 {
@@ -340,7 +330,7 @@ func ReadFlowRate() float64 {
 	}
 	clearAllFlags()
 	return 0.0
- }
+}
 
 /* --------------------------- utils ---------------------------------- */
 
