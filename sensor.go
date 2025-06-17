@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"syscall"
 	"unsafe"
 )
@@ -113,6 +114,7 @@ func InitSPI(chipName string, csGPIO int, spiDev string) {
 	}
 	spiFile = f
 
+	// 2) Ioctl constants from <linux/spi/spidev.h>
 	const (
 		spiIOCWrMode        = 0x40016b01 // _IOW('k', 1, __u8)
 		spiIOCWrBitsPerWord = 0x40016b03 // _IOW('k', 3, __u8)
@@ -140,19 +142,30 @@ func InitSPI(chipName string, csGPIO int, spiDev string) {
 		spiIOCWrMaxSpeedHz, uintptr(unsafe.Pointer(&speed500kHz))); errno != 0 {
 		log.Fatalf("Failed to set SPI max speed: %v", errno)
 	}
+
 	// 3) Export CS GPIO via sysfs (if not already)
 	gpioPath := fmt.Sprintf("/sys/class/gpio/gpio%d", csGPIO)
-	// if _, err := os.Stat(gpioPath); os.IsNotExist(err) {
-	// 	if err := os.WriteFile("/sys/class/gpio/export",
-	// 		[]byte(fmt.Sprintf("%d", csGPIO)), 0644); err != nil {
-	// 		log.Fatalf("Failed to export GPIO %d: %v", csGPIO, err)
-	// 	}
-	// }
+	if _, err := os.Stat(gpioPath); os.IsNotExist(err) {
+		expF, err := os.OpenFile("/sys/class/gpio/export", os.O_WRONLY, 0)
+		if err != nil {
+			log.Fatalf("Failed to open GPIO export: %v", err)
+		}
+		defer expF.Close()
+		if _, err := expF.WriteString(strconv.Itoa(csGPIO)); err != nil {
+			log.Fatalf("Failed to export GPIO %d: %v", csGPIO, err)
+		}
+	}
+
 	// 4) Configure direction = out
-	if err := os.WriteFile(gpioPath+"/direction",
-		[]byte("out"), 0644); err != nil {
+	dirF, err := os.OpenFile(gpioPath+"/direction", os.O_WRONLY, 0)
+	if err != nil {
+		log.Fatalf("Failed to open GPIO direction file: %v", err)
+	}
+	defer dirF.Close()
+	if _, err := dirF.WriteString("out"); err != nil {
 		log.Fatalf("Failed to set GPIO direction: %v", err)
 	}
+
 	// 5) Open the value file for later SetCS calls
 	vf, err := os.OpenFile(gpioPath+"/value", os.O_WRONLY, 0)
 	if err != nil {
@@ -166,5 +179,4 @@ func InitSPI(chipName string, csGPIO int, spiDev string) {
 	}
 
 	log.Printf("SPI initialized: device=%s, cs_gpio=%d\n", devPath, csGPIO)
-	// …rest of function unchanged…
 }
