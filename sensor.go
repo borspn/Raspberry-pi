@@ -385,13 +385,6 @@ func SensorInit() {
 	}
 
 	clearAllFlags()
-	myNewFHL = uint8(myNewFHLmV / 0.88)
-
-	writeDword(rcRAAWRRAM, byte(shrFHLU), uint32(myNewFHL))
-	writeDword(rcRAAWRRAM, byte(shrFHLD), uint32(myNewFHL))
-
-	mySetFHLmV = myNewFHLmV
-	myNewFHLmV = 0
 
 	tofHitNO = cfgRegisters[10] & uint32(tofHitNOMask)
 	tofHitNO >>= 8
