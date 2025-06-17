@@ -237,34 +237,48 @@ func putCSHigh() error {
 }
 
 func spiTransfer(tx []byte, rx []byte) error {
-	var txPtr, rxPtr uintptr
-	if len(tx) > 0 {
-		txPtr = uintptr(unsafe.Pointer(&tx[0]))
-	}
-	if len(rx) > 0 {
-		rxPtr = uintptr(unsafe.Pointer(&rx[0]))
-	}
+    // determine how many bytes to clock
+    length := len(tx)
+    if len(rx) > length {
+        length = len(rx)
+    }
 
-	msg := spiIocTransfer{
-		TxBuf:       uint64(txPtr),
-		RxBuf:       uint64(rxPtr),
-		Len:         uint32(len(tx)),
-		SpeedHz:     0, // use whatever was set by InitSPI
-		DelayUsecs:  0,
-		BitsPerWord: 0,
-		CsChange:    0,
-	}
+    // if we're reading-only, make a dummy TX buffer of the right size
+    var dummy []byte
+    if len(tx) == 0 && length > 0 {
+        dummy = make([]byte, length)
+        tx = dummy
+    }
 
-	if _, _, errno := syscall.Syscall(
-		syscall.SYS_IOCTL,
-		spiFile.Fd(),
-		uintptr(spiIOCMessage1),
-		uintptr(unsafe.Pointer(&msg)),
-	); errno != 0 {
-		return fmt.Errorf("ioctl SPI_IOC_MESSAGE failed: %v", errno)
-	}
-	return nil
+    var txPtr, rxPtr uintptr
+    if len(tx) > 0 {
+        txPtr = uintptr(unsafe.Pointer(&tx[0]))
+    }
+    if len(rx) > 0 {
+        rxPtr = uintptr(unsafe.Pointer(&rx[0]))
+    }
+
+    msg := spiIocTransfer{
+        TxBuf:       uint64(txPtr),
+        RxBuf:       uint64(rxPtr),
+        Len:         uint32(length), // ← now covers both TX and RX
+        SpeedHz:     0,              // leave as-configured
+        DelayUsecs:  0,
+        BitsPerWord: 0,
+        CsChange:    0,
+    }
+
+    if _, _, errno := syscall.Syscall(
+        syscall.SYS_IOCTL,
+        spiFile.Fd(),
+        uintptr(spiIOCMessage1),
+        uintptr(unsafe.Pointer(&msg)),
+    ); errno != 0 {
+        return fmt.Errorf("ioctl SPI_IOC_MESSAGE failed: %v", errno)
+    }
+    return nil
 }
+
 
 func writeOpcode(b byte) {
 	putCSLow()
