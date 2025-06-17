@@ -291,34 +291,122 @@ func writeDword(opcode, address byte, value uint32) {
 }
 
 func readDword(opcode, address byte) uint32 {
-    tx := []byte{opcode, address}
-    rx := make([]byte, 4)
+	tx := []byte{opcode, address}
+	rx := make([]byte, 4)
 
-    // pull CS low
-    if err := putCSLow(); err != nil {
-        log.Fatalf("failed to set CS low: %v", err)
-    }
-    // ensure CS is released
-    defer func() {
-        if err := putCSHigh(); err != nil {
-            log.Fatalf("failed to set CS high: %v", err)
-        }
-    }()
+	putCSLow()
+	defer putCSHigh()
 
-    // write the opcode+address
-    if err := spiTransfer(tx, nil); err != nil {
-        log.Fatalf("SPI write failed: %v", err)
-    }
-    // read the 4-byte response
-    if err := spiTransfer(nil, rx); err != nil {
-        log.Fatalf("SPI read failed: %v", err)
-    }
+	// write the opcode+address
+	if err := spiTransfer(tx, nil); err != nil {
+		log.Fatalf("SPI write failed: %v", err)
+	}
+	// read the 4-byte response
+	if err := spiTransfer(nil, rx); err != nil {
+		log.Fatalf("SPI read failed: %v", err)
+	}
 
-    // decode big-endian uint32
-    return binary.BigEndian.Uint32(rx)
+	// decode big-endian uint32
+	return binary.BigEndian.Uint32(rx)
 }
 
 // clearAllFlags resets all the relevant flags, namely Frontend Status, Error Flag, and Interrupt Flag.
 func clearAllFlags() {
 	writeDword(rcRAAWRRAM, byte(shrEXC), (fesCLRMask | efCLRMask | ifCLRMask))
+}
+
+func twoSComplementConversion(rawNumber uint32, multFactor float32) float32 {
+	var exp float64
+	var halfExp float64
+	var number float64
+	exp = 65536
+
+	halfExp = exp / 2
+	number = float64(rawNumber) / exp
+
+	if number > halfExp-1 {
+		number -= exp
+	}
+
+	return float32(number * float64(multFactor))
+}
+
+func writeSensorConfig(opcode uint8, fromAddr int, data []uint32, toAddr int) {
+	// Drive CS low, ensure it goes high when done.
+	putCSLow()
+	defer putCSHigh()
+
+	// Write the auto-increment header: [opcode][start address]
+	header := []byte{opcode, byte(fromAddr)}
+	if err := spiTransfer(header, nil); err != nil {
+		log.Fatalf("Failed to write auto-incr header: %v", err)
+	}
+
+	// Ensure data slice is large enough for the address range
+	// (inclusive count = toAddr - fromAddr + 1)
+	count := toAddr - fromAddr + 1
+	if count > len(data) {
+		log.Fatalf("Data array is smaller than the address range")
+	}
+
+	// Write each 32-bit word in big-endian order
+	for i := 0; i < count; i++ {
+		buf := make([]byte, 4)
+		binary.BigEndian.PutUint32(buf, data[i])
+		if err := spiTransfer(buf, nil); err != nil {
+			log.Fatalf("Failed to write data at address %d: %v", fromAddr+i, err)
+		}
+	}
+}
+
+func SensorInit() {
+	cfgRegisters := [20]uint32{
+		0x48DBA399,
+		0x00800401,
+		0x00000000,
+		0x00000001,
+		0x0011F7FF,
+		0x6046EF29,
+		0x01012100,
+		0x00240000,
+		0x006807E4,
+		0x60160204,
+		0x010FEA14,
+		0x23A4DE81,
+		0x94A0C46C,
+		0x401100C4,
+		0x00A7400F,
+		0x00000001,
+		0x000015E0,
+		0x000015E0,
+		0x0000004B,
+		0x0000004B,
+	}
+
+	myNewFHL = uint8(myNewFHLmV / 0.88)
+
+	writeDword(rcRAAWRRAM, byte(shrFHLU), uint32(myNewFHL))
+	writeDword(rcRAAWRRAM, byte(shrFHLD), uint32(myNewFHL))
+
+	mySetFHLmV = myNewFHLmV
+	myNewFHLmV = 0
+
+	tofHitNO = cfgRegisters[10] & uint32(tofHitNOMask)
+	tofHitNO >>= 8
+
+	tofHitNO = cfgRegisters[10] & uint32(tofHitNOMask)
+	tofHitNO >>= 8
+
+	//fmt.Println("Writing configuration...")
+	writeOpcode(rcBMREQ)
+	writeOpcode(rcMCTOFF)
+	writeSensorConfig(rcRAAWRRAM, 0xC0, cfgRegisters[:], 0xCF)
+	writeDword(rcRAAWRRAM, byte(shrTOFRate), 0x00000001)
+	writeDword(rcRAAWRRAM, byte(shrUSMRLSDLYU), 0x000015E0)
+	writeDword(rcRAAWRRAM, byte(shrUSMRLSDLYD), 0x000015E0)
+	writeDword(rcRAAWRRAM, byte(shrZCDFHLU), 0x0000004B)
+	writeDword(rcRAAWRRAM, byte(shrZCDFHLD), 0x0000004B)
+	writeOpcode(rcMCTON)
+	writeOpcode(rcIFCLR)
+	writeOpcode(rcBMRLS)
 }

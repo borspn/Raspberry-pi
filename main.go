@@ -16,6 +16,7 @@ func main() {
 	writeOpcode(99)
 	writeDword(rcRAAWRRAM, byte(shrEXC), (fesCLRMask | efCLRMask | ifCLRMask))
 	readDword(rcRAARDRAM, srrERRFLAG)
+	SensorInit()
 	fmt.Println("success")
 	//SensorInit()
 
