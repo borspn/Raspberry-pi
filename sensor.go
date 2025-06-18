@@ -139,6 +139,21 @@ var fwc = []byte{
 	0xCD,
 }
 
+// InitSPI initializes the SPI interface and configures the chip select (CS) GPIO line.
+//
+// It performs the following steps:
+//   1. Opens the specified SPI device (e.g., "/dev/spidev0.0") for read/write access.
+//   2. Configures the SPI mode, bits per word, and maximum speed using ioctl system calls.
+//   3. Opens the specified GPIO chip character device (e.g., "/dev/gpiochip0").
+//   4. Requests a handle for the specified CS GPIO line, configuring it as an output and setting its default value to high (idle).
+//   5. Stores the file descriptors for the SPI device and CS GPIO handle for future use.
+//
+// Parameters:
+//   - chipName: Name of the GPIO chip device (e.g., "gpiochip0").
+//   - csGPIO: GPIO line number to use as the chip select (CS) signal.
+//   - spiDev: Name of the SPI device (e.g., "spidev0.0").
+//
+// The function logs fatal errors and terminates the program if any step fails.
 func InitSPI(chipName string, csGPIO int, spiDev string) {
 	// 1) Open SPI device
 	devPath := "/dev/" + spiDev
@@ -171,7 +186,6 @@ func InitSPI(chipName string, csGPIO int, spiDev string) {
 	}
 
 	// 3) Open the GPIO chip character device
-	//    chipName should be something like "gpiochip0"
 	chipPath := "/dev/" + chipName
 	chipDev, err := os.OpenFile(chipPath, os.O_RDWR, 0)
 	if err != nil {
@@ -277,6 +291,13 @@ func spiTransfer(tx []byte, rx []byte) error {
 	return nil
 }
 
+// writeOpcode sends a single opcode byte over the SPI interface.
+// It pulls the chip select (CS) line low before transmission and ensures
+// the CS line is set high after the operation completes. If the SPI transfer
+// fails, the function logs a fatal error and terminates the program.
+//
+// Parameters:
+//   - b: The opcode byte to send over SPI.
 func writeOpcode(b byte) {
 	putCSLow()
 	defer putCSHigh()
@@ -287,6 +308,14 @@ func writeOpcode(b byte) {
 	}
 }
 
+// writeDword sends a 6-byte command over SPI consisting of an opcode, address, and a 32-bit value.
+// The value is encoded in big-endian order.
+// If the SPI transfer fails, the function logs a fatal error and terminates the program.
+//
+// Parameters:
+//   - opcode:  The SPI command opcode byte.
+//   - address: The target address byte.
+//   - value:   The 32-bit value to write, encoded in big-endian order.
 func writeDword(opcode, address byte, value uint32) {
 	// build a 6-byte buffer: [opcode][address][value(4 bytes BE)]
 	buf := make([]byte, 6)
@@ -302,6 +331,16 @@ func writeDword(opcode, address byte, value uint32) {
 	}
 }
 
+// readDword sends an SPI command composed of the given opcode and address,
+// then reads a 4-byte big-endian response from the SPI device and returns it as a uint32.
+// If any SPI transfer fails, the function logs a fatal error and terminates the program.
+//
+// Parameters:
+//   opcode  - the SPI command opcode to send
+//   address - the address byte to send with the opcode
+//
+// Returns:
+//   The 4-byte big-endian value read from the SPI device as a uint32.
 func readDword(opcode, address byte) uint32 {
 	tx := []byte{opcode, address}
 	rx := make([]byte, 4)
@@ -327,6 +366,16 @@ func clearAllFlags() {
 	writeDword(rcRAAWRRAM, byte(shrEXC), (fesCLRMask | efCLRMask | ifCLRMask))
 }
 
+// twoSComplementConversion converts a raw unsigned 16-bit sensor value (provided as uint32)
+// into a signed floating-point value using two's complement representation and applies a
+// multiplication factor.
+//
+// Parameters:
+//   - rawNumber: The raw sensor value as an unsigned 32-bit integer.
+//   - multFactor: A floating-point multiplier to scale the converted value.
+//
+// Returns:
+//   - The converted and scaled value as a float32.
 func twoSComplementConversion(rawNumber uint32, multFactor float32) float32 {
 	var exp float64
 	var halfExp float64
@@ -343,8 +392,19 @@ func twoSComplementConversion(rawNumber uint32, multFactor float32) float32 {
 	return float32(number * float64(multFactor))
 }
 
+// writeSensorConfig writes a sequence of 32-bit configuration values to a sensor over SPI,
+// starting from a specified address and using an auto-incrementing address mode.
+//
+// Parameters:
+//   opcode   - The SPI command opcode to initiate the write operation.
+//   fromAddr - The starting register address to write to.
+//   data     - A slice of 32-bit unsigned integers to write to the sensor.
+//   toAddr   - The ending register address (inclusive).
+//
+// It sends an auto-increment header followed by the data words in
+// big-endian order. If the data slice is too small for the address range, or if any SPI
+// transfer fails, the function logs a fatal error and terminates the program.
 func writeSensorConfig(opcode uint8, fromAddr int, data []uint32, toAddr int) {
-	// Drive CS low, ensure it goes high when done.
 	putCSLow()
 	defer putCSHigh()
 
@@ -371,6 +431,11 @@ func writeSensorConfig(opcode uint8, fromAddr int, data []uint32, toAddr int) {
 	}
 }
 
+// SensorInit initializes the sensor by configuring its registers with predefined values.
+// It clears all status flags, sets up the sensor's configuration registers, and writes
+// specific control words to the sensor. This function prepares the sensor for operation
+// by enabling required features, setting timing parameters, and applying necessary trims.
+// The configuration is written via a sequence of opcodes and register writes.
 func SensorInit() {
 	cfgRegisters := [20]uint32{
 		0x48DBA399, // [0xC0] CR_WD_DIS
@@ -400,7 +465,6 @@ func SensorInit() {
 	tofHitNO = cfgRegisters[10] & uint32(tofHitNOMask)
 	tofHitNO >>= 8
 
-	//fmt.Println("Writing configuration...")
 	writeOpcode(rcBMREQ)
 	writeOpcode(rcMCTOFF)
 	writeSensorConfig(rcRAAWRRAM, 0xC0, cfgRegisters[:], 0xCF)
@@ -414,12 +478,23 @@ func SensorInit() {
 	writeOpcode(rcBMRLS)
 }
 
+// myInitState initializes the state variables by resetting the error counter,
+// clearing the new configuration flag, and marking the chip as initialized.
 func myInitState() {
 	myErrorCounter = 0
 	myNewConfiguration = 0
 	myChipInitialized = 1
 }
 
+// calcTimeOfFlight calculates the time of flight for a sensor at the specified address.
+// It reads a 32-bit raw value from the sensor's memory, converts it using two's complement conversion,
+// and returns the result as a float32 representing the time of flight.
+//
+// Parameters:
+//   tofAddress - The address of the time-of-flight sensor.
+//
+// Returns:
+//   float32 - The calculated time of flight.
 func calcTimeOfFlight(tofAddress byte) float32 {
 	var rawValue uint32
 	var floatValue float32
@@ -430,6 +505,10 @@ func calcTimeOfFlight(tofAddress byte) float32 {
 	return floatValue
 }
 
+// ReadFlowRate reads sensor data to calculate and return the volumetric flow rate.
+// It checks for error flags, processes time-of-flight measurements, and computes the flow rate
+// using physical constants and sensor parameters. If an error is detected, it clears flags and returns -1.0.
+// Returns the calculated volumetric flow rate as a float64 value.
 func ReadFlowRate() float64 {
 
 	srrERRFLAGContent = readDword(rcRAARDRAM, srrERRFLAG)
@@ -457,5 +536,5 @@ func ReadFlowRate() float64 {
 		return volumetricFlowRate
 	}
 	clearAllFlags()
-	return 0.0
+	return -1.0
 }
