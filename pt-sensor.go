@@ -8,7 +8,7 @@ import (
 
 const (
 	// I2C_SLAVE ioctl request code to set the slave address
-	I2C_SLAVE  = 0x0703
+	I2C_SLAVE = 0x0703
 	// Measure command as per your spec (AA_HEX)
 	measureCmd = 0xAA
 )
