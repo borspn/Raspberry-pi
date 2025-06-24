@@ -1,5 +1,4 @@
-// sensor/i2c_sensor.go
-package sensor
+package main
 
 import (
 	"os"
