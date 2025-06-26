@@ -29,6 +29,12 @@ func New(bus string, addr uint8, measureDelay time.Duration) (*Sensor, error) {
 	return &Sensor{file: f, delay: measureDelay}, nil
 }
 
+type tempOutput struct {
+	bite1 byte
+	bite2 byte
+	bite3 byte
+}
+
 func (s *Sensor) readRaw() (status byte, rawP, rawT uint32, err error) {
 	if _, err = s.file.Write([]byte{measureCmd}); err != nil {
 		return
@@ -43,9 +49,9 @@ func (s *Sensor) readRaw() (status byte, rawP, rawT uint32, err error) {
 	for i := 0; i < 6; i++ {
 		fmt.Printf("Byte %d: %b\n", i+1, buf[i+1])
 	}
-	rawP = uint32(buf[1])<<16 | uint32(buf[2])<<8 | uint32(buf[3])
+	rawP = bytesToUint32BE(buf[1:4])
 	fmt.Println("Raw Pressure:", rawP)
-	rawT = uint32(buf[4])<<16 | uint32(buf[5])<<8 | uint32(buf[6])
+	rawT = bytesToUint32BE(buf[4:7])
 	fmt.Println("Raw Temperature:", rawT)
 	return
 }
