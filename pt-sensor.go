@@ -44,7 +44,9 @@ func (s *Sensor) readRaw() (status byte, rawP, rawT uint32, err error) {
 		fmt.Printf("Byte %d: %02b\n", i+1, buf[i+1])
 	}
 	rawP = uint32(buf[1])<<16 | uint32(buf[2])<<8 | uint32(buf[3])
+	fmt.Println("Raw Pressure:", rawP)
 	rawT = uint32(buf[4])<<16 | uint32(buf[5])<<8 | uint32(buf[6])
+	fmt.Println("Raw Temperature:", rawT)
 	return
 }
 
