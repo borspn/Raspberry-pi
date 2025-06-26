@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"syscall"
 	"time"
@@ -38,6 +39,10 @@ func (s *Sensor) readRaw() (status byte, rawP, rawT uint32, err error) {
 		return
 	}
 	status = buf[0]
+	fmt.Println("Status:", status)
+	for i := 0; i < 6; i++ {
+		fmt.Printf("Byte %d: %02X\n", i+1, buf[i+1])
+	}
 	rawP = uint32(buf[1])<<16 | uint32(buf[2])<<8 | uint32(buf[3])
 	rawT = uint32(buf[4])<<16 | uint32(buf[5])<<8 | uint32(buf[6])
 	return
