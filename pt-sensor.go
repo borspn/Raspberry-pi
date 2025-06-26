@@ -70,5 +70,5 @@ func convertPressure(raw uint32) float64 {
 
 // Placeholder until manufacturer provides a formula
 func convertTemperature(raw uint32) float64 {
-	return float64(raw)
+	return 0.00286*float64(raw) - 18.75
 }
