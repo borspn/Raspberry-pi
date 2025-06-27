@@ -76,12 +76,10 @@ func (s *Sensor) Close() error {
 	return s.file.Close()
 }
 
-// implements datasheet formula: Y = 0.00286 * X - 18.75
 func convertPressure(raw uint32) float64 {
-	return 0.00286*float64(raw) - 18.75
+	return 0.000011175871*float64(raw) - 18.75
 }
 
-// Placeholder until manufacturer provides a formula
 func convertTemperature(raw uint32) float64 {
-	return 0.00286*float64(raw) - 18.75
+	return 0.00000983476639*float64(raw) - 40
 }
