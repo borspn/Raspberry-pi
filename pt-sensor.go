@@ -47,12 +47,12 @@ func (s *Sensor) readRaw() (status byte, rawP, rawT uint32, err error) {
 	status = buf[0]
 	fmt.Println("Status:", status)
 	for i := 0; i < 6; i++ {
-		fmt.Printf("Byte %d: %b\n", i+1, buf[i+1])
+		fmt.Printf("Byte %d: %x\n", i+1, buf[i+1])
 	}
 	rawP = uint32(buf[1])<<16 | uint32(buf[2])<<8 | uint32(buf[3])
-	fmt.Printf("rawP: %b\n", rawP)
+	fmt.Printf("rawP: %x\n", rawP)
 	rawT = uint32(buf[4])<<16 | uint32(buf[5])<<8 | uint32(buf[6])
-	fmt.Printf("rawT: %b\n", rawT)
+	fmt.Printf("rawT: %x\n", rawT)
 	return
 }
 
@@ -76,7 +76,7 @@ func (s *Sensor) Close() error {
 	return s.file.Close()
 }
 
-// Now implements datasheet formula: Y = 0.00286 * X - 18.75
+// implements datasheet formula: Y = 0.00286 * X - 18.75
 func convertPressure(raw uint32) float64 {
 	return 0.00286*float64(raw) - 18.75
 }
