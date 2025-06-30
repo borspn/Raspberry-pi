@@ -85,6 +85,7 @@ func (sensor *PTSensor) Update() {
 			return
 		}
 		sensor.pressure = convertPressure(rawP)
+		sensor.temperature = convertTemperature(rawT)
 		fmt.Printf("Updated Temperature: %.2f °C, Pressure: %.2f Pa\n", sensor.temperature, sensor.pressure)
 	}
 }
