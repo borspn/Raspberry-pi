@@ -75,6 +75,7 @@ func (s *PTSensor) Close() error {
 
 func (sensor *PTSensor) Update() {
 	status, rawP, rawT, err := sensor.readRaw()
+	fmt.Println("Raw Pressure:", rawP, "Raw Temperature:", rawT)
 	if err != nil {
 		fmt.Println("Error reading sensor data:", err)
 		return
