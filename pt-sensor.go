@@ -30,14 +30,10 @@ func (s *PTSensor) readRaw() (status byte, rawP uint32, rawT uint32, err error) 
 		return
 	}
 	status = buf[0]
-	fmt.Println("Status:", status)
-	for i := 0; i < 6; i++ {
-		fmt.Printf("Byte %d: %x\n", i+1, buf[i+1])
-	}
+
 	rawP = uint32(buf[1])<<16 | uint32(buf[2])<<8 | uint32(buf[3])
-	fmt.Printf("rawP: %x\n", rawP)
 	rawT = uint32(buf[4])<<16 | uint32(buf[5])<<8 | uint32(buf[6])
-	fmt.Printf("rawT: %x\n", rawT)
+
 	return
 }
 
@@ -75,7 +71,6 @@ func (s *PTSensor) Close() error {
 
 func (sensor *PTSensor) Update() {
 	status, rawP, rawT, err := sensor.readRaw()
-	fmt.Println("Raw Pressure:", rawP, "Raw Temperature:", rawT)
 	if err != nil {
 		fmt.Println("Error reading sensor data:", err)
 		return

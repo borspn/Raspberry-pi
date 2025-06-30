@@ -19,7 +19,6 @@ func main() {
 	}
 	defer s.Close()
 	s.Update()
-	time.Sleep(1 * time.Second) // Wait for the sensor to stabilize
 	fmt.Printf("Temperature: %.2f °C\n", s.GetTemperature())
 	fmt.Printf("Pressure:    %.2f Pa\n", s.GetPressure())
 }
