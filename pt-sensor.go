@@ -20,7 +20,7 @@ type PTSensor struct {
 	pressure    float64
 }
 
-func (s *PTSensor) readRaw() (status byte, rawP, rawT uint32, err error) {
+func (s *PTSensor) readRaw() (status byte, rawP uint32, rawT uint32, err error) {
 	if _, err = s.ptDev.Write([]byte{MEASURE_CMD}); err != nil {
 		return
 	}
@@ -80,11 +80,11 @@ func (sensor *PTSensor) Update() {
 		return
 	}
 	if status != 64 {
-	if status != STATUS_OK {
-		fmt.Println("PTSensor status error:", status)
-		return
+		if status != STATUS_OK {
+			fmt.Println("PTSensor status error:", status)
+			return
+		}
+		sensor.pressure = convertPressure(rawP)
+		fmt.Printf("Updated Temperature: %.2f °C, Pressure: %.2f Pa\n", sensor.temperature, sensor.pressure)
 	}
-	sensor.pressure = convertPressure(rawP)
-	fmt.Printf("Updated Temperature: %.2f °C, Pressure: %.2f Pa\n", sensor.temperature, sensor.pressure)
-}
 }
