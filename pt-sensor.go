@@ -12,36 +12,25 @@ const (
 	measureCmd = 0xAA
 )
 
-type Sensor struct {
-	file  *os.File
-	delay time.Duration
+type PTSensor struct {
+	delay       time.Duration
+	ptDev       *os.File
+	temperature float64
+	pressure    float64
 }
-
-func New(bus string, addr uint8, measureDelay time.Duration) (*Sensor, error) {
-	f, err := os.OpenFile("/dev/i2c-"+bus, os.O_RDWR, 0)
-	if err != nil {
-		return nil, err
-	}
-	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(), I2C_SLAVE, uintptr(addr)); errno != 0 {
-		f.Close()
-		return nil, errno
-	}
-	return &Sensor{file: f, delay: measureDelay}, nil
-}
-
 type tempOutput struct {
 	bite1 byte
 	bite2 byte
 	bite3 byte
 }
 
-func (s *Sensor) readRaw() (status byte, rawP, rawT uint32, err error) {
-	if _, err = s.file.Write([]byte{measureCmd}); err != nil {
+func (s *PTSensor) readRaw() (status byte, rawP, rawT uint32, err error) {
+	if _, err = s.ptDev.Write([]byte{measureCmd}); err != nil {
 		return
 	}
 	time.Sleep(s.delay)
 	buf := make([]byte, 1+3+3)
-	if _, err = s.file.Read(buf); err != nil {
+	if _, err = s.ptDev.Read(buf); err != nil {
 		return
 	}
 	status = buf[0]
@@ -56,30 +45,50 @@ func (s *Sensor) readRaw() (status byte, rawP, rawT uint32, err error) {
 	return
 }
 
-func (s *Sensor) GetPressure() float64 {
-	_, rawP, _, err := s.readRaw()
-	if err != nil {
-		panic(err)
-	}
-	return convertPressure(rawP)
-}
-
-func (s *Sensor) GetTemperature() float64 {
-	_, _, rawT, err := s.readRaw()
-	if err != nil {
-		panic(err)
-	}
-	return convertTemperature(rawT)
-}
-
-func (s *Sensor) Close() error {
-	return s.file.Close()
-}
-
 func convertPressure(raw uint32) float64 {
 	return 0.000011175871*float64(raw) - 18.75
 }
 
 func convertTemperature(raw uint32) float64 {
 	return 0.00000983476639*float64(raw) - 40
+}
+
+func New(bus string, addr uint8, measureDelay time.Duration) (*PTSensor, error) {
+	f, err := os.OpenFile("/dev/i2c-"+bus, os.O_RDWR, 0)
+	if err != nil {
+		return nil, err
+	}
+	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, f.Fd(), I2C_SLAVE, uintptr(addr)); errno != 0 {
+		f.Close()
+		return nil, errno
+	}
+	return &PTSensor{ptDev: f, delay: measureDelay}, nil
+}
+
+func (s *PTSensor) GetPressure() float64 {
+	return s.pressure
+}
+
+func (s *PTSensor) GetTemperature() float64 {
+	return s.temperature
+}
+
+func (s *PTSensor) Close() error {
+	return s.ptDev.Close()
+}
+
+func (sensor *PTSensor) Update() {
+	sensor.ptDev.Seek(0, 0) // Reset the file pointer to the beginning
+	status, rawP, rawT, err := sensor.readRaw()
+	if err != nil {
+		fmt.Println("Error reading sensor data:", err)
+		return
+	}
+	if status != 0 {
+		fmt.Println("PTSensor status error:", status)
+		return
+	}
+	sensor.temperature = convertTemperature(rawT)
+	sensor.pressure = convertPressure(rawP)
+	fmt.Printf("Updated Temperature: %.2f °C, Pressure: %.2f Pa\n", sensor.temperature, sensor.pressure)
 }
