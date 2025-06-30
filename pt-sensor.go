@@ -15,7 +15,7 @@ const (
 
 type PTSensor struct {
 	delay       time.Duration
-	ptDev       *os.File`	`	`	`	`	`	`	`	`	`
+	ptDev       *os.File
 	temperature float64
 	pressure    float64
 }
