@@ -58,7 +58,7 @@ func New(bus string, addr uint8, measureDelay time.Duration) (*PTSensor, error) 
 		f.Close()
 		return nil, errno
 	}
-	return &PTSensor{ptDev: f, delay: measureDelay}, nil
+	return &PTSensor{ptDev: f, delay: measureDelay, temperature: 0.0, pressure: 0.0}, nil
 }
 
 func (s *PTSensor) GetPressure() float64 {

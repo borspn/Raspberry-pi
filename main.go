@@ -18,7 +18,7 @@ func main() {
 		panic(err)
 	}
 	defer s.Close()
-
+	s.Update()
 	fmt.Printf("Temperature: %.2f °C\n", s.GetTemperature())
 	fmt.Printf("Pressure:    %.2f Pa\n", s.GetPressure())
 }
