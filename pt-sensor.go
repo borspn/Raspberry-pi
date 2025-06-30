@@ -15,7 +15,7 @@ const (
 
 type PTSensor struct {
 	delay       time.Duration
-	ptDev       *os.File
+	ptDev       *os.File`	`	`	`	`	`	`	`	`	`
 	temperature float64
 	pressure    float64
 }
@@ -86,4 +86,5 @@ func (sensor *PTSensor) Update() {
 	}
 	sensor.pressure = convertPressure(rawP)
 	fmt.Printf("Updated Temperature: %.2f °C, Pressure: %.2f Pa\n", sensor.temperature, sensor.pressure)
+}
 }
