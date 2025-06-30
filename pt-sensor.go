@@ -18,12 +18,10 @@ type PTSensor struct {
 	temperature float64
 	pressure    float64
 }
-type tempOutput struct {
-	bite1 byte
-	bite2 byte
-	bite3 byte
-}
 
+// readRaw sends a measurement command to the PT sensor, waits for the required delay,
+// and reads the raw pressure and temperature data from the device. It returns the status byte,
+// the raw pressure (rawP) and temperature (rawT) values as uint32, and an error if any I/O operation fails.
 func (s *PTSensor) readRaw() (status byte, rawP, rawT uint32, err error) {
 	if _, err = s.ptDev.Write([]byte{measureCmd}); err != nil {
 		return
@@ -84,7 +82,7 @@ func (sensor *PTSensor) Update() {
 		fmt.Println("Error reading sensor data:", err)
 		return
 	}
-	if status != 0 {
+	if status != 64 {
 		fmt.Println("PTSensor status error:", status)
 		return
 	}
