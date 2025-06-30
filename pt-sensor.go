@@ -80,13 +80,11 @@ func (sensor *PTSensor) Update() {
 		fmt.Println("Error reading sensor data:", err)
 		return
 	}
-	if status != 64 {
-		if status != STATUS_OK {
-			fmt.Println("PTSensor status error:", status)
-			return
-		}
-		sensor.pressure = convertPressure(rawP)
-		sensor.temperature = convertTemperature(rawT)
-		fmt.Printf("Updated Temperature: %.2f °C, Pressure: %.2f Pa\n", sensor.temperature, sensor.pressure)
+	if status != STATUS_OK {
+		fmt.Println("PTSensor status error:", status)
+		return
 	}
+	sensor.pressure = convertPressure(rawP)
+	sensor.temperature = convertTemperature(rawT)
+	fmt.Printf("Updated Temperature: %.2f °C, Pressure: %.2f Pa\n", sensor.temperature, sensor.pressure)
 }
