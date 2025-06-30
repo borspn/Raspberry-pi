@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	I2C_SLAVE  = 0x0703
-	measureCmd = 0xAA
+	I2C_SLAVE   = 0x0703
+	MEASURE_CMD = 0xAA
+	STATUS_OK   = 64
 )
 
 type PTSensor struct {
@@ -19,11 +20,8 @@ type PTSensor struct {
 	pressure    float64
 }
 
-// readRaw sends a measurement command to the PT sensor, waits for the required delay,
-// and reads the raw pressure and temperature data from the device. It returns the status byte,
-// the raw pressure (rawP) and temperature (rawT) values as uint32, and an error if any I/O operation fails.
 func (s *PTSensor) readRaw() (status byte, rawP, rawT uint32, err error) {
-	if _, err = s.ptDev.Write([]byte{measureCmd}); err != nil {
+	if _, err = s.ptDev.Write([]byte{MEASURE_CMD}); err != nil {
 		return
 	}
 	time.Sleep(s.delay)
@@ -76,17 +74,16 @@ func (s *PTSensor) Close() error {
 }
 
 func (sensor *PTSensor) Update() {
-	sensor.ptDev.Seek(0, 0) // Reset the file pointer to the beginning
 	status, rawP, rawT, err := sensor.readRaw()
 	if err != nil {
 		fmt.Println("Error reading sensor data:", err)
 		return
 	}
 	if status != 64 {
+	if status != STATUS_OK {
 		fmt.Println("PTSensor status error:", status)
 		return
 	}
-	sensor.temperature = convertTemperature(rawT)
 	sensor.pressure = convertPressure(rawP)
 	fmt.Printf("Updated Temperature: %.2f °C, Pressure: %.2f Pa\n", sensor.temperature, sensor.pressure)
 }
