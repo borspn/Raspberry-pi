@@ -1,4 +1,4 @@
-package sensor
+package main
 
 type Time struct {
 	Sec  int
