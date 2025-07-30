@@ -1,4 +1,4 @@
-package main
+package sensor
 
 import (
 	"fmt"
@@ -37,10 +37,12 @@ func (s *PTSensor) readRaw() (status byte, rawP uint32, rawT uint32, err error) 
 	return
 }
 
+// formula was provided by vendor (see verefication spreadsheet)
 func convertPressure(raw uint32) float64 {
 	return 0.000011175871*float64(raw) - 18.75
 }
 
+// formula was provided by vendor (see verefication spreadsheet)
 func convertTemperature(raw uint32) float64 {
 	return 0.00000983476639*float64(raw) - 40
 }
