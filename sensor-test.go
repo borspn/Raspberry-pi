@@ -22,9 +22,10 @@ const (
 func runFlowTest(chipName string, csGPIO int, spiDev string) {
 	InitSPI(chipName, csGPIO, spiDev)
 	SensorInit()
-	t := time.NewTicker(10 * time.Second)
-	for fr := range t.C {
-		_ = fr // just wait
+	t := time.NewTicker(2 * time.Second)
+	defer t.Stop()
+	for i := 0; i < 3; i++ {
+		<-t.C
 		fmt.Printf("flow: %.6f\n", ReadFlowRate())
 	}
 }
